@@ -1,10 +1,7 @@
 using EFIT
 
 function load(g::GEQDSKFile)
-    r = linspace(extrema(g.r)...,length(g.r))
-    z = linspace(extrema(g.z)...,length(g.z))
-    psi = linspace(extrema(g.psi)...,length(g.psi))
-    M = AxisymmetricEquilibrium(r, z, psi, g.psirz, g.fpol, g.pres, g.qpsi, g.fpol*0, (g.rmaxis,g.zmaxis),g.sibry);
+    M = AxisymmetricEquilibrium(g.r, g.z, g.psi, g.psirz, g.fpol, g.pres, g.qpsi, g.fpol*0, (g.rmaxis,g.zmaxis),g.sibry);
     return M
 end
 
