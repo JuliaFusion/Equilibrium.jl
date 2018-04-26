@@ -1,7 +1,21 @@
-# Equilibrium
+# Equilibrium.jl
 
-[![Build Status](https://travis-ci.org/lstagner/Equilibrium.jl.svg?branch=master)](https://travis-ci.org/lstagner/Equilibrium.jl)
+Provides tools for working with MHD Equilibrium.
 
-[![Coverage Status](https://coveralls.io/repos/lstagner/Equilibrium.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/lstagner/Equilibrium.jl?branch=master)
+```julia
+using EFIT
+using Equilibrium
 
-[![codecov.io](http://codecov.io/github/lstagner/Equilibrium.jl/coverage.svg?branch=master)](http://codecov.io/github/lstagner/Equilibrium.jl?branch=master)
+g = readg("g000001.01000")
+
+M = load(g) # or M = load_geqdsk("g000001.01000")
+
+limiter = load_limiter(g) # or load_geqdsk_limiter("g000001.01000")
+
+Bfield(M, r, z)
+
+Jfield(M, r, z)
+
+in_vessel(limiter,r,z)
+```
+
