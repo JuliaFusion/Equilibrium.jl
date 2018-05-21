@@ -1,15 +1,11 @@
 using EFIT
 
-function load(g::GEQDSKFile)
+function AxisymmetricEquilibrium(g::GEQDSKFile)
     M = AxisymmetricEquilibrium(g.r, g.z, g.psi, g.psirz, g.fpol, g.pres, g.qpsi, g.fpol*0, (g.rmaxis,g.zmaxis),g.sibry);
     return M
 end
 
-function load_geqdsk(gfile)
-    return load(readg(gfile))
-end
-
-function load_limiter(g::GEQDSKFile)
+function Limiter(g::GEQDSKFile)
     lim = Limiter()
     for i =1:length(g.rlim)
         push!(lim.vertices,(g.rlim[i],g.zlim[i]))
@@ -19,6 +15,7 @@ function load_limiter(g::GEQDSKFile)
     return lim
 end
 
-function load_geqdsk_limiter(gfile)
-    return load_limiter(readg(gfile))
+function read_geqdsk(gfile)
+    g = readg(gfile)
+    return AxisymmetricEquilibrium(g), Limiter(g)
 end
