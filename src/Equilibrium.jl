@@ -1,3 +1,5 @@
+__precompile__()
+
 module Equilibrium
 
 using Interpolations
@@ -14,7 +16,7 @@ export Limiter, in_vessel
 
 @require EFIT begin
     include("efit_io.jl")
-    export load, load_geqdsk, load_limiter, load_geqdsk_limiter
+    export read_geqdsk
 end
 
 end # module
