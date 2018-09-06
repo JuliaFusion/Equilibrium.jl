@@ -1,4 +1,4 @@
-mutable struct AxisymmetricEquilibrium{T<:Real, S<:Range{Float64},
+mutable struct AxisymmetricEquilibrium{T<:Real, S<:AbstractRange{Float64},
                                R<:AbstractArray{Float64,2},
                                Q<:AbstractArray{Float64,1}}
     r::S               # Radius/R range
@@ -16,12 +16,12 @@ mutable struct AxisymmetricEquilibrium{T<:Real, S<:Range{Float64},
     flux::T            # Enclosed Poloidal Flux
 end
 
-function AxisymmetricEquilibrium{T<:Real}(r::Range{T}, z::Range{T}, psi::Range{T}, psi_rz, g, p, q, phi, axis::NTuple{2,T}, flux)
+function AxisymmetricEquilibrium(r::AbstractRange{T}, z::AbstractRange{T}, psi::AbstractRange{T}, psi_rz, g, p, q, phi, axis::NTuple{2,T}, flux) where {T <: Real}
 
     psi_max = maximum(psi_rz)
     dpsi = step(psi)
     psi_ext = psi[1]:dpsi:psi_max
-    psi_ext = linspace(psi_ext[1],psi_ext[end],length(psi_ext))
+    psi_ext = range(psi_ext[1],stop=psi_ext[end],length=length(psi_ext))
     g_ext = [i <= length(g) ? g[i] : g[end] for i=1:length(psi_ext)]
     p_ext = [i <= length(p) ? p[i] : 0.0 for i=1:length(psi_ext)]
     q_ext = [i <= length(q) ? q[i] : q[end] for i=1:length(psi_ext)]

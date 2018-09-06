@@ -2,8 +2,9 @@ __precompile__()
 
 module Equilibrium
 
+using EFIT
+using LinearAlgebra
 using Interpolations
-using Requires
 
 const mu0 = 4*pi*1e-7
 
@@ -14,9 +15,7 @@ export Bfield, Efield, Jfield
 include("limiter.jl")
 export Limiter, in_vessel
 
-@require EFIT begin
-    include("efit_io.jl")
-    export read_geqdsk
-end
+include("efit_io.jl")
+export read_geqdsk
 
 end # module
