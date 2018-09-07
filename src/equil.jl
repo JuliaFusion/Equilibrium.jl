@@ -18,33 +18,24 @@ end
 
 function AxisymmetricEquilibrium(r::AbstractRange{T}, z::AbstractRange{T}, psi::AbstractRange{T}, psi_rz, g, p, q, phi, axis::NTuple{2,T}, flux) where {T <: Real}
 
-    psi_max = maximum(psi_rz)
-    dpsi = step(psi)
-    psi_ext = psi[1]:dpsi:psi_max
-    psi_ext = range(psi_ext[1],stop=psi_ext[end],length=length(psi_ext))
-    g_ext = [i <= length(g) ? g[i] : g[end] for i=1:length(psi_ext)]
-    p_ext = [i <= length(p) ? p[i] : 0.0 for i=1:length(psi_ext)]
-    q_ext = [i <= length(q) ? q[i] : q[end] for i=1:length(psi_ext)]
-    phi_ext = [i <= length(phi) ? phi[i] : phi[end] for i=1:length(psi_ext)]
-
-    psi_rz_itp = scale(interpolate(psi_rz, BSpline(Cubic(Line())), OnGrid()), r, z)
-    g_itp = scale(interpolate(g_ext, BSpline(Cubic(Line())), OnGrid()), psi_ext)
-    p_itp = scale(interpolate(p_ext, BSpline(Cubic(Line())), OnGrid()), psi_ext)
-    q_itp = scale(interpolate(q_ext, BSpline(Cubic(Line())), OnGrid()), psi_ext)
-    phi_itp = scale(interpolate(phi_ext, BSpline(Cubic(Line())), OnGrid()), psi_ext)
+    psi_rz_itp = CubicSplineInterpolation((r,z), psi_rz, extrapolation_bc=Flat())
+    g_itp = CubicSplineInterpolation(psi, g, extrapolation_bc=Flat())
+    p_itp = CubicSplineInterpolation(psi, p, extrapolation_bc=Flat())
+    q_itp = CubicSplineInterpolation(psi, q, extrapolation_bc=Flat())
+    phi_itp = CubicSplineInterpolation(psi, phi, extrapolation_bc=Flat())
 
     b = [norm(Bfield(psi_rz_itp,g_itp,rr,zz)) for rr in r, zz in z]
-    b_itp = scale(interpolate(b, BSpline(Cubic(Line())), OnGrid()), r, z)
+    b_itp = CubicSplineInterpolation((r,z),b,extrapolation_bc=Flat())
 
     j = [norm(Jfield(psi_rz_itp,g_itp,p_itp,rr,zz)) for rr in r, zz in z]
-    j_itp = scale(interpolate(j, BSpline(Cubic(Line())), OnGrid()), r, z)
+    j_itp = CubicSplineInterpolation((r,z),j,extrapolation_bc=Flat())
 
     rr = axis[1] + (r[end] - axis[1])/10
     zz = axis[2] + (z[end] - axis[2])/10
 
     sigma = Int(sign(dot(Jfield(psi_rz_itp,g_itp,p_itp,rr,zz), Bfield(psi_rz_itp,g_itp,rr,zz))))
 
-    AxisymmetricEquilibrium(r, z, psi_ext, psi_rz_itp, g_itp, p_itp, q_itp, phi_itp, b_itp, j_itp, axis, sigma, flux)
+    AxisymmetricEquilibrium(r, z, psi, psi_rz_itp, g_itp, p_itp, q_itp, phi_itp, b_itp, j_itp, axis, sigma, flux)
 end
 
 function Base.show(io::IO, M::AxisymmetricEquilibrium)
@@ -52,9 +43,9 @@ function Base.show(io::IO, M::AxisymmetricEquilibrium)
 end
 
 function Bfield(psi_rz, g, r, z)
-    psi = psi_rz[r,z]
-    gval = g[psi]
-    grad_psi = gradient(psi_rz, r, z)
+    psi = psi_rz(r,z)
+    gval = g(psi)
+    grad_psi = Interpolations.gradient(psi_rz, r, z)
 
     br = grad_psi[2]/r
     bz = -grad_psi[1]/r
@@ -68,12 +59,12 @@ function Bfield(M::AxisymmetricEquilibrium, r, z)
 end
 
 function Jfield(psi_rz, g, p, r, z)
-    psi = psi_rz[r,z]
-    gval = g[psi]
-    grad_psi = gradient(psi_rz, r, z)
+    psi = psi_rz(r,z)
+    gval = g(psi)
+    grad_psi = Interpolations.gradient(psi_rz, r, z)
 
-    gp = -gradient(g, psi)[1]
-    pp = -gradient(p, psi)[1]
+    gp = -Interpolations.gradient(g, psi)[1]
+    pp = -Interpolations.gradient(p, psi)[1]
 
     jr = gp*grad_psi[2]/(r*mu0)
     jz = -gp*grad_psi[1]/(r*mu0)
@@ -87,11 +78,11 @@ function Jfield(M::AxisymmetricEquilibrium, r, z)
 end
 
 function Efield(psi_rz, phi, r, z, Bpol)
-    psi = psi_rz[r,z]
-    grad_psi = gradient(psi_rz, r, z)
+    psi = psi_rz(r,z)
+    grad_psi = Interpolations.gradient(psi_rz, r, z)
     grad_psi = grad_psi/norm(grad_psi)
 
-    Er = -r*Bpol*gradient(phi, psi)[1]
+    Er = -r*Bpol*Interpolations.gradient(phi, psi)[1]
 
     ER = Er*grad_psi[1] # Er*dpsi/dR = (-dphi/dpsi)*(dpsi/dR)
     Ez = Er*grad_psi[2] # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
