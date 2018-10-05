@@ -42,6 +42,46 @@ function Base.show(io::IO, M::AxisymmetricEquilibrium)
     print(io, "AxisymmetricEquilibrium{$(eltype(M.psi))}")
 end
 
+struct EMFields
+    B::Vector{Float64}
+    E::Vector{Float64}
+end
+
+function Base.show(io::IO, EM::EMFields)
+    print(io, "EMFields")
+    print(io, " B = $(round.(EM.B,digits=3)) [T]")
+    print(io, " E = $(round.(EM.E,digits=3)) [V/m]")
+end
+
+function EMFields(psi_rz, g, phi, r, z)
+    psi = psi_rz(r,z)
+    gval = g(psi)
+    grad_psi = Interpolations.gradient(psi_rz, r, z)
+    grad_psi_norm = norm(grad_psi)
+
+    # Calculate B-Field
+    BR = grad_psi[2]/r
+    Bz = -grad_psi[1]/r
+    Bt = gval/r
+    Bpol = sqrt(BR^2 + Bz^2)
+
+    # Calculate E-Field
+    Er = -r*Bpol*Interpolations.gradient(phi, psi)[1]
+    ER = Er*grad_psi[1]/grad_psi_norm # Er*dpsi/dR = (-dphi/dpsi)*(dpsi/dR)
+    Ez = Er*grad_psi[2]/grad_psi_norm # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
+    Et = 0.0
+
+    return EMFields([BR,Bt,Bz],[ER,Et,Ez])
+end
+
+function EMFields(M::AxisymmetricEquilibrium, r, z)
+    EMFields(M.psi_rz, M.g, M.phi, r, z)
+end
+
+function fields(M::AxisymmetricEquilibrium, r, z)
+    EMFields(M.psi_rz, M.g, M.phi, r, z)
+end
+
 function Bfield(psi_rz, g, r, z)
     psi = psi_rz(r,z)
     gval = g(psi)
