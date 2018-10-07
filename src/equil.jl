@@ -42,9 +42,9 @@ function Base.show(io::IO, M::AxisymmetricEquilibrium)
     print(io, "AxisymmetricEquilibrium{$(eltype(M.psi))}")
 end
 
-struct EMFields
-    B::Vector{Float64}
-    E::Vector{Float64}
+struct EMFields{T<:AbstractVector}
+    B::T
+    E::T
 end
 
 function Base.show(io::IO, EM::EMFields)
