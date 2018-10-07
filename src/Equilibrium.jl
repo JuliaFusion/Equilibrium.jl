@@ -19,4 +19,7 @@ export Limiter, in_vessel
 include("efit_io.jl")
 export read_geqdsk
 
+include("transp_io.jl")
+export transp_potential!
+
 end # module
