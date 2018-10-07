@@ -56,7 +56,7 @@ end
 function EMFields(psi_rz, g, phi, r, z)
     psi = psi_rz(r,z)
     gval = g(psi)
-    grad_psi = Interpolations.gradient(psi_rz, r, z)
+    grad_psi = SVector{2}(Interpolations.gradient(psi_rz, r, z))
     grad_psi_norm = norm(grad_psi)
 
     # Calculate B-Field
@@ -71,7 +71,7 @@ function EMFields(psi_rz, g, phi, r, z)
     Ez = Er*grad_psi[2]/grad_psi_norm # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
     Et = 0.0
 
-    return EMFields([BR,Bt,Bz],[ER,Et,Ez])
+    return EMFields(SVector{3}(BR,Bt,Bz),SVector{3}(ER,Et,Ez))
 end
 
 function EMFields(M::AxisymmetricEquilibrium, r, z)
@@ -85,13 +85,13 @@ end
 function Bfield(psi_rz, g, r, z)
     psi = psi_rz(r,z)
     gval = g(psi)
-    grad_psi = Interpolations.gradient(psi_rz, r, z)
+    grad_psi = SVector{2}(Interpolations.gradient(psi_rz, r, z))
 
     br = grad_psi[2]/r
     bz = -grad_psi[1]/r
     bt = gval/r
 
-    return [br,bt,bz]
+    return SVector{3}(br,bt,bz)
 end
 
 function Bfield(M::AxisymmetricEquilibrium, r, z)
@@ -101,7 +101,7 @@ end
 function Jfield(psi_rz, g, p, r, z)
     psi = psi_rz(r,z)
     gval = g(psi)
-    grad_psi = Interpolations.gradient(psi_rz, r, z)
+    grad_psi = SVector{2}(Interpolations.gradient(psi_rz, r, z))
 
     gp = -Interpolations.gradient(g, psi)[1]
     pp = -Interpolations.gradient(p, psi)[1]
@@ -110,7 +110,7 @@ function Jfield(psi_rz, g, p, r, z)
     jz = -gp*grad_psi[1]/(r*mu0)
     jt = r*pp + gval*gp/(r*mu0)
 
-    return [jr,jt,jz]
+    return SVector{3}(jr,jt,jz)
 end
 
 function Jfield(M::AxisymmetricEquilibrium, r, z)
@@ -119,7 +119,7 @@ end
 
 function Efield(psi_rz, phi, r, z, Bpol)
     psi = psi_rz(r,z)
-    grad_psi = Interpolations.gradient(psi_rz, r, z)
+    grad_psi = SVector{2}(Interpolations.gradient(psi_rz, r, z))
     grad_psi = grad_psi/norm(grad_psi)
 
     Er = -r*Bpol*Interpolations.gradient(phi, psi)[1]
@@ -128,7 +128,7 @@ function Efield(psi_rz, phi, r, z, Bpol)
     Ez = Er*grad_psi[2] # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
     Et = 0.0
 
-    return [ER, Et, Ez]
+    return SVector{3}(ER, Et, Ez)
 end
 
 function Efield(M::AxisymmetricEquilibrium, r, z)

@@ -5,6 +5,7 @@ module Equilibrium
 using EFIT
 using LinearAlgebra
 using Interpolations
+using StaticArrays
 
 const mu0 = 4*pi*1e-7
 
