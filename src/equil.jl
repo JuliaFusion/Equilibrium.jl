@@ -42,7 +42,9 @@ function Base.show(io::IO, M::AxisymmetricEquilibrium)
     print(io, "AxisymmetricEquilibrium{$(eltype(M.psi))}")
 end
 
-struct EMFields{T<:AbstractVector}
+struct EMFields{S<:Number,T<:AbstractVector}
+    psi::S
+    g::S
     B::T
     E::T
 end
@@ -71,7 +73,7 @@ function EMFields(psi_rz, g, phi, r, z)
     Ez = Er*grad_psi[2]/grad_psi_norm # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
     Et = 0.0
 
-    return EMFields(SVector{3}(BR,Bt,Bz),SVector{3}(ER,Et,Ez))
+    return EMFields(psi, gval, SVector{3}(BR,Bt,Bz), SVector{3}(ER,Et,Ez))
 end
 
 function EMFields(M::AxisymmetricEquilibrium, r, z)
