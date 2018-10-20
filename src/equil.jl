@@ -71,7 +71,7 @@ function EMFields(psi_rz, g, phi, r, z)
     Er = -r*Bpol*Interpolations.gradient(phi, psi)[1]
     ER = Er*grad_psi[1]/grad_psi_norm # Er*dpsi/dR = (-dphi/dpsi)*(dpsi/dR)
     Ez = Er*grad_psi[2]/grad_psi_norm # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
-    Et = 0.0
+    Et = zero(Ez)
 
     return EMFields(psi, gval, SVector{3}(BR,Bt,Bz), SVector{3}(ER,Et,Ez))
 end
@@ -128,7 +128,7 @@ function Efield(psi_rz, phi, r, z, Bpol)
 
     ER = Er*grad_psi[1] # Er*dpsi/dR = (-dphi/dpsi)*(dpsi/dR)
     Ez = Er*grad_psi[2] # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
-    Et = 0.0
+    Et = zero(Ez)
 
     return SVector{3}(ER, Et, Ez)
 end
