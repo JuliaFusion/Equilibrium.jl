@@ -8,6 +8,20 @@ function Base.show(io::IO, l::Limiter)
     print(io,"Limiter: npoints = $(length(l.vertices))")
 end
 
+function Base.getproperty(l::Limiter{T},s::Symbol) where T<:Real
+    if s == :vertices
+        return getfield(l,s)
+    end
+    if s == :r
+        v = getfield(l,:vertices)
+        return getindex.(v,1)
+    end
+    if s == :z
+        return getindex.(v,2)
+    end
+    error("type $(typeof(l)) has no field $s")
+end
+
 function is_left(p0,p1,p2)
     return ((p1[1] - p0[1]) * (p2[2] - p0[2]) - (p2[1] -  p0[1]) * (p1[2] - p0[2]))
 end
