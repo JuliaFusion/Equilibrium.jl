@@ -138,3 +138,17 @@ function Efield(M::AxisymmetricEquilibrium, r, z)
     Bpol = sqrt(B[1]^2 + B[3]^2)
     Efield(M.psi_rz, M.phi, r, z, Bpol)
 end
+
+function Efield(M::AxisymmetricEquilibrium, r, z, vrot::AbstractVector)
+    psi = M.psi_rz(r,z)
+    gval = M.g(psi)
+    grad_psi = SVector{2}(Interpolations.gradient(M.psi_rz, r, z))
+    B = SVector{3}(grad_psi[2]/r, -grad_psi[1]/r, gval/r)
+
+    grad_psi = grad_psi/norm(grad_psi)
+    qval = M.q(psi)
+    dp = Interpolations.gradient(M.p, psi)[1]
+    gradp = SVector{3}(dp*grad_psi[1], zero(grad_psi[1]), dp*grad_psi[2])
+
+    return cross(vrot,B) .+ gradp/qval
+end
