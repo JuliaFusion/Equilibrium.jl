@@ -2,7 +2,7 @@ struct Limiter{T}
     vertices::Vector{NTuple{2,T}}
 end
 
-Limiter() = Limiter(NTuple{2,Float64}[])
+Limiter(T=Float64) = Limiter(NTuple{2,T}[])
 
 function Base.show(io::IO, l::Limiter)
     print(io,"Limiter: npoints = $(length(l.vertices))")
