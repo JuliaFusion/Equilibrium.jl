@@ -17,6 +17,7 @@ function Base.getproperty(l::Limiter{T},s::Symbol) where T<:Real
         return getindex.(v,1)
     end
     if s == :z
+        v = getfield(l,:vertices)
         return getindex.(v,2)
     end
     error("type $(typeof(l)) has no field $s")
