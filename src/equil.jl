@@ -152,3 +152,7 @@ function Efield(M::AxisymmetricEquilibrium, r, z, vrot::AbstractVector)
 
     return cross(vrot,B) .+ gradp/qval
 end
+
+function rho_p(M::AxisymmetricEquilibrium, r, z)
+    sqrt((M.psi_rz(r,z) - M.psi[1])/M.flux)
+end
