@@ -5,13 +5,14 @@ module Equilibrium
 using EFIT
 using LinearAlgebra
 using Interpolations
+using ForwardDiff
 using StaticArrays
 
 const mu0 = 4*pi*1e-7
 
 include("equil.jl")
 export AxisymmetricEquilibrium
-export Bfield, Efield, Jfield, EMFields, fields
+export Bfield, Efield, Jfield, EMFields, fields, gradB, curlB
 
 include("limiter.jl")
 export Limiter, in_vessel

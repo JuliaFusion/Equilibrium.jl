@@ -81,7 +81,19 @@ function EMFields(M::AxisymmetricEquilibrium, r, z)
 end
 
 function fields(M::AxisymmetricEquilibrium, r, z)
-    EMFields(M.psi_rz, M.g, M.phi, r, z)
+    F = EMFields(M.psi_rz, M.g, M.phi, r, z)
+    return F
+end
+
+function fields(M::AxisymmetricEquilibrium, x, y, z)
+    r = hypot(x,y)
+    phi = atan(y,x)
+    F = fields(M,r,z)
+    sp = sin(phi)
+    cp = cos(phi)
+    B = SVector{3}(F.B[1]*cp - F.B[2]*sp,F.B[1]*sp + F.B[2]*cp,F.B[3])
+    E = SVector{3}(F.E[1]*cp - F.E[2]*sp,F.E[1]*sp + F.E[2]*cp,F.E[3])
+    return EMFields(F.psi, F.g, B, E)
 end
 
 function Bfield(psi_rz, g, r, z)
@@ -97,7 +109,18 @@ function Bfield(psi_rz, g, r, z)
 end
 
 function Bfield(M::AxisymmetricEquilibrium, r, z)
-    Bfield(M.psi_rz, M.g, r, z)
+    B = Bfield(M.psi_rz, M.g, r, z)
+    return B
+end
+
+function Bfield(M::AxisymmetricEquilibrium, x, y, z)
+    r = hypot(x,y)
+    phi = atan(y,x)
+    B = Bfield(M,r,z)
+    sp = sin(phi)
+    cp = cos(phi)
+    B_xyz = SVector{3}(B[1]*cp - B[2]*sp, B[1]*sp + B[2]*cp, B[3])
+    return B_xyz
 end
 
 function Jfield(psi_rz, g, p, r, z)
@@ -116,7 +139,18 @@ function Jfield(psi_rz, g, p, r, z)
 end
 
 function Jfield(M::AxisymmetricEquilibrium, r, z)
-    Jfield(M.psi_rz, M.g, M.p, r, z)
+    J = Jfield(M.psi_rz, M.g, M.p, r, z)
+    return J
+end
+
+function Jfield(M::AxisymmetricEquilibrium, x, y, z)
+    r = hypot(x,y)
+    phi = atan(y,x)
+    J = Jfield(M,r,z)
+    sp = sin(phi)
+    cp = cos(phi)
+    J_xyz = SVector{3}(J[1]*cp - J[2]*sp, J[1]*sp + J[2]*cp, J[3])
+    return J_xyz
 end
 
 function Efield(psi_rz, phi, r, z, Bpol)
@@ -136,7 +170,18 @@ end
 function Efield(M::AxisymmetricEquilibrium, r, z)
     B = Bfield(M, r, z)
     Bpol = sqrt(B[1]^2 + B[3]^2)
-    Efield(M.psi_rz, M.phi, r, z, Bpol)
+    E = Efield(M.psi_rz, M.phi, r, z, Bpol)
+    return E
+end
+
+function Efield(M::AxisymmetricEquilibrium, x, y, z)
+    r = hypot(x,y)
+    phi = atan(y,x)
+    E = Efield(M,r,z)
+    sp = sin(phi)
+    cp = cos(phi)
+    E_xyz = SVector{3}(E[1]*cp - E[2]*sp, E[1]*sp + E[2]*cp, E[3])
+    return E_xyz
 end
 
 function Efield(M::AxisymmetricEquilibrium, r, z, vrot::AbstractVector)
@@ -150,9 +195,52 @@ function Efield(M::AxisymmetricEquilibrium, r, z, vrot::AbstractVector)
     dp = Interpolations.gradient(M.p, psi)[1]
     gradp = SVector{3}(dp*grad_psi[1], zero(grad_psi[1]), dp*grad_psi[2])
 
-    return cross(vrot,B) .+ gradp/qval
+    E = cross(vrot,B) .+ gradp/qval
+    return E
+end
+
+function Efield(M::AxisymmetricEquilibrium, x, y, z, vrot::AbstractVector)
+    r = hypot(x,y)
+    phi = atan(y,x)
+    E = Efield(M,r,z,vrot)
+    sp = sin(phi)
+    cp = cos(phi)
+    E_xyz = SVector{3}(E[1]*cp - E[2]*sp, E[1]*sp + E[2]*cp, E[3])
+    return E_xyz
 end
 
 function rho_p(M::AxisymmetricEquilibrium, r, z)
     sqrt((M.psi_rz(r,z) - M.psi[1])/M.flux)
 end
+
+function rho_p(M::AxisymmetricEquilibrium, x, y, z)
+    r = hypot(x,y)
+    rho_p(M,r,z)
+end
+
+function gradB(M::AxisymmetricEquilibrium, r, z)
+    gB_rz = Interpolations.gradient(M.b,r,z)
+    SVector{3}(gB_rz[1],0.0,gB_rz[2])
+end
+
+function gradB(M::AxisymmetricEquilibrium, x, y, z)
+    r = hypot(x,y)
+    phi = atan(y,x)
+    gB_rz = Interpolations.gradient(M.b,r,z)
+    gB = SVector{3}(gB_rz[1],0.0,gB_rz[2])
+    sp = sin(phi)
+    cp = cos(phi)
+    gB_xyz = SVector{3}(gB[1]*cp - gB[2]*sp, gB[1]*sp + gB[2]*cp, gB[3])
+end
+
+function curlB(M::AxisymmetricEquilibrium, r, z)
+    J = ForwardDiff.jacobian(x->Bfield(M,x[1],x[3]),SVector{3}(r,0.0,z))
+    B = Bfield(M,r,z)
+    return SVector{3}(J[3,2]/r - J[2,3], J[1,3] - J[3,1], (B[2]/r + J[2,1]) - J[1,2])
+end
+
+function curlB(M::AxisymmetricEquilibrium, x, y, z)
+    J = ForwardDiff.jacobian(x->Bfield(M,x[1],x[2],x[3]),SVector{3}(x,y,z))
+    return SVector{3}(J[3,2] - J[2,3], J[1,3]-J[3,1], J[2,1] - J[1,2])
+end
+

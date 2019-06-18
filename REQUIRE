@@ -1,5 +1,6 @@
 julia 1.1
 Interpolations
+ForwardDiff
 StaticArrays
 EFIT
 NetCDF
