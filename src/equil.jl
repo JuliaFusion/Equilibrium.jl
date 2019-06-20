@@ -42,6 +42,8 @@ function Base.show(io::IO, M::AxisymmetricEquilibrium)
     print(io, "AxisymmetricEquilibrium{$(eltype(M.psi))}")
 end
 
+Base.broadcastable(M::AxisymmetricEquilibrium) = (M,)
+
 struct EMFields{S<:Number,T<:AbstractVector}
     psi::S
     g::S

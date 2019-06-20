@@ -8,6 +8,8 @@ function Base.show(io::IO, l::Limiter)
     print(io,"Limiter: npoints = $(length(l.vertices))")
 end
 
+Base.broadcastable(l::Limiter) = (l,)
+
 function Base.getproperty(l::Limiter{T},s::Symbol) where T<:Real
     if s == :vertices
         return getfield(l,s)
