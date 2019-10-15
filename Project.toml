@@ -1,7 +1,7 @@
 name = "Equilibrium"
 uuid = "187daef3-cca3-527a-8725-7379bc760182"
-version = "0.1.0"
 author = ["Luke Stagner <stagnerl@fusion.gat.com>"]
+version = "0.1.0"
 
 [deps]
 EFIT = "cda752c5-6b03-55a3-9e33-132a441b0c17"
