@@ -12,4 +12,4 @@ NetCDF = "30363a11-5582-574a-97bb-aa9a979735b9"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
-julia = "≥ 1.1.0"
+julia = "^1.2"
