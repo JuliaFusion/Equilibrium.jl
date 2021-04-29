@@ -1,7 +1,7 @@
 using EFIT
 
 function AxisymmetricEquilibrium(g::GEQDSKFile)
-    M = AxisymmetricEquilibrium(g.r, g.z, g.psi, g.psirz, g.fpol, g.pres, g.qpsi, g.fpol*0, (g.rmaxis,g.zmaxis),g.sibry - g.simag);
+    M = AxisymmetricEquilibrium(g.r, g.z, g.psi, g.psirz, g.fpol, g.pres, g.qpsi, g.fpol*0, (g.rmaxis,g.zmaxis), g.simag, g.sibry);
     return M
 end
 

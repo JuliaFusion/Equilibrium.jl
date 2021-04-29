@@ -3,8 +3,8 @@ mutable struct AxisymmetricEquilibrium{T<:Real, S<:AbstractRange{Float64},
                                Q<:AbstractArray{Float64,1}}
     r::S               # Radius/R range
     z::S               # Elevation/Z range
-    psi::S             # "Ribbon" Polodial Flux range (polodial flux from magnetic axis)
-    psi_rz::R          # "Ribbon" Polodial Flux on RZ grid (polodial flux from magnetic axis)
+    psi::S             # Polodial Flux range (polodial flux from magnetic axis)
+    psi_rz::R          # Polodial Flux on RZ grid (polodial flux from magnetic axis)
     g::Q               # Polodial Current
     p::Q               # Plasma pressure
     q::Q               # Q profile
@@ -13,10 +13,18 @@ mutable struct AxisymmetricEquilibrium{T<:Real, S<:AbstractRange{Float64},
     j::R               # Plasma Current magnitude
     axis::NTuple{2, T} # Magnetic Axis (raxis,zaxis)
     sigma::Int         # sign(dot(J,B))
+    alpha::Int         # Poloidal Flux type "Disk: 1" or "Ribbon: -1"
     flux::T            # Enclosed Poloidal Flux
 end
 
-function AxisymmetricEquilibrium(r::AbstractRange{T}, z::AbstractRange{T}, psi::AbstractRange{T}, psi_rz, g, p, q, phi, axis::NTuple{2,T}, flux) where {T <: Real}
+function AxisymmetricEquilibrium(r::AbstractRange{T}, z::AbstractRange{T}, psi::AbstractRange{T}, psi_rz, g, p, q, phi, axis::NTuple{2,T}, psi_mag, psi_bdry) where {T <: Real}
+
+    flux = psi_bdry - psi_mag
+    if iszero(psi_mag)
+        alpha = -1
+    else
+        alpha = 1
+    end
 
     psi_rz_itp = CubicSplineInterpolation((r,z), psi_rz, extrapolation_bc=Flat())
     g_itp = CubicSplineInterpolation(psi, g, extrapolation_bc=Flat())
@@ -24,18 +32,18 @@ function AxisymmetricEquilibrium(r::AbstractRange{T}, z::AbstractRange{T}, psi::
     q_itp = CubicSplineInterpolation(psi, q, extrapolation_bc=Flat())
     phi_itp = CubicSplineInterpolation(psi, phi, extrapolation_bc=Flat())
 
-    b = [norm(Bfield(psi_rz_itp,g_itp,rr,zz)) for rr in r, zz in z]
+    b = [norm(Bfield(psi_rz_itp,g_itp,rr,zz,alpha)) for rr in r, zz in z]
     b_itp = CubicSplineInterpolation((r,z),b,extrapolation_bc=Flat())
 
-    j = [norm(Jfield(psi_rz_itp,g_itp,p_itp,rr,zz)) for rr in r, zz in z]
+    j = [norm(Jfield(psi_rz_itp,g_itp,p_itp,rr,zz,alpha)) for rr in r, zz in z]
     j_itp = CubicSplineInterpolation((r,z),j,extrapolation_bc=Flat())
 
     rr = axis[1] + (r[end] - axis[1])/10
     zz = axis[2] + (z[end] - axis[2])/10
 
-    sigma = Int(sign(dot(Jfield(psi_rz_itp,g_itp,p_itp,rr,zz), Bfield(psi_rz_itp,g_itp,rr,zz))))
+    sigma = Int(sign(dot(Jfield(psi_rz_itp,g_itp,p_itp,rr,zz,alpha), Bfield(psi_rz_itp,g_itp,rr,zz,alpha))))
 
-    AxisymmetricEquilibrium(r, z, psi, psi_rz_itp, g_itp, p_itp, q_itp, phi_itp, b_itp, j_itp, axis, sigma, flux)
+    AxisymmetricEquilibrium(r, z, psi, psi_rz_itp, g_itp, p_itp, q_itp, phi_itp, b_itp, j_itp, axis, sigma, alpha, flux)
 end
 
 function Base.show(io::IO, M::AxisymmetricEquilibrium)
@@ -57,33 +65,33 @@ function Base.show(io::IO, EM::EMFields)
     print(io, " E = $(round.(EM.E,digits=3)) [V/m]")
 end
 
-function EMFields(psi_rz, g, phi, r, z)
+function EMFields(psi_rz, g, phi, r, z, alpha)
     psi = psi_rz(r,z)
     gval = g(psi)
-    grad_psi = SVector{2}(Interpolations.gradient(psi_rz, r, z))
+    grad_psi = alpha*SVector{2}(Interpolations.gradient(psi_rz, r, z))
     grad_psi_norm = norm(grad_psi)
 
     # Calculate B-Field
-    BR = grad_psi[2]/r
-    Bz = -grad_psi[1]/r
+    BR = -grad_psi[2]/r
+    Bz = grad_psi[1]/r
     Bt = gval/r
     Bpol = sqrt(BR^2 + Bz^2)
 
     # Calculate E-Field
-    Er = -r*Bpol*Interpolations.gradient(phi, psi)[1]
-    ER = Er*grad_psi[1]/grad_psi_norm # Er*dpsi/dR = (-dphi/dpsi)*(dpsi/dR)
-    Ez = Er*grad_psi[2]/grad_psi_norm # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
+    Er = alpha*r*Bpol*Interpolations.gradient(phi, psi)[1]
+    ER = -Er*grad_psi[1]/grad_psi_norm # Er*dpsi/dR = (-dphi/dpsi)*(dpsi/dR)
+    Ez = -Er*grad_psi[2]/grad_psi_norm # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
     Et = zero(Ez)
 
     return EMFields(psi, gval, SVector{3}(BR,Bt,Bz), SVector{3}(ER,Et,Ez))
 end
 
 function EMFields(M::AxisymmetricEquilibrium, r, z)
-    EMFields(M.psi_rz, M.g, M.phi, r, z)
+    EMFields(M.psi_rz, M.g, M.phi, r, z, M.alpha)
 end
 
 function fields(M::AxisymmetricEquilibrium, r, z)
-    F = EMFields(M.psi_rz, M.g, M.phi, r, z)
+    F = EMFields(M.psi_rz, M.g, M.phi, r, z, M.alpha)
     return F
 end
 
@@ -97,20 +105,20 @@ function fields(M::AxisymmetricEquilibrium, x, y, z)
     return EMFields(F.psi, F.g, B, E)
 end
 
-function Bfield(psi_rz, g, r, z)
+function Bfield(psi_rz, g, r, z, alpha)
     psi = psi_rz(r,z)
     gval = g(psi)
-    grad_psi = SVector{2}(Interpolations.gradient(psi_rz, r, z))
+    grad_psi = alpha*SVector{2}(Interpolations.gradient(psi_rz, r, z))
 
-    br = grad_psi[2]/r
-    bz = -grad_psi[1]/r
+    br = -grad_psi[2]/r
+    bz = grad_psi[1]/r
     bt = gval/r
 
     return SVector{3}(br,bt,bz)
 end
 
 function Bfield(M::AxisymmetricEquilibrium, r, z)
-    B = Bfield(M.psi_rz, M.g, r, z)
+    B = Bfield(M.psi_rz, M.g, r, z, M.alpha)
     return B
 end
 
@@ -123,23 +131,23 @@ function Bfield(M::AxisymmetricEquilibrium, x, y, z)
     return B_xyz
 end
 
-function Jfield(psi_rz, g, p, r, z)
+function Jfield(psi_rz, g, p, r, z, alpha)
     psi = psi_rz(r,z)
     gval = g(psi)
-    grad_psi = SVector{2}(Interpolations.gradient(psi_rz, r, z))
+    grad_psi = alpha*SVector{2}(Interpolations.gradient(psi_rz, r, z))
 
-    gp = -Interpolations.gradient(g, psi)[1]
-    pp = -Interpolations.gradient(p, psi)[1]
+    gp = alpha*Interpolations.gradient(g, psi)[1]
+    pp = alpha*Interpolations.gradient(p, psi)[1]
 
-    jr = gp*grad_psi[2]/(r*mu0)
-    jz = -gp*grad_psi[1]/(r*mu0)
+    jr = -gp*grad_psi[2]/(r*mu0)
+    jz = gp*grad_psi[1]/(r*mu0)
     jt = r*pp + gval*gp/(r*mu0)
 
     return SVector{3}(jr,jt,jz)
 end
 
 function Jfield(M::AxisymmetricEquilibrium, r, z)
-    J = Jfield(M.psi_rz, M.g, M.p, r, z)
+    J = Jfield(M.psi_rz, M.g, M.p, r, z, M.alpha)
     return J
 end
 
@@ -152,15 +160,15 @@ function Jfield(M::AxisymmetricEquilibrium, x, y, z)
     return J_xyz
 end
 
-function Efield(psi_rz, phi, r, z, Bpol)
+function Efield(psi_rz, phi, r, z, Bpol, alpha)
     psi = psi_rz(r,z)
-    grad_psi = SVector{2}(Interpolations.gradient(psi_rz, r, z))
+    grad_psi = alpha*SVector{2}(Interpolations.gradient(psi_rz, r, z))
     grad_psi = grad_psi/norm(grad_psi)
 
-    Er = -r*Bpol*Interpolations.gradient(phi, psi)[1]
+    Er = alpha*r*Bpol*Interpolations.gradient(phi, psi)[1]
 
-    ER = Er*grad_psi[1] # Er*dpsi/dR = (-dphi/dpsi)*(dpsi/dR)
-    Ez = Er*grad_psi[2] # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
+    ER = -Er*grad_psi[1] # Er*dpsi/dR = (-dphi/dpsi)*(dpsi/dR)
+    Ez = -Er*grad_psi[2] # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
     Et = zero(Ez)
 
     return SVector{3}(ER, Et, Ez)
@@ -169,7 +177,7 @@ end
 function Efield(M::AxisymmetricEquilibrium, r, z)
     B = Bfield(M, r, z)
     Bpol = sqrt(B[1]^2 + B[3]^2)
-    E = Efield(M.psi_rz, M.phi, r, z, Bpol)
+    E = Efield(M.psi_rz, M.phi, r, z, Bpol, M.alpha)
     return E
 end
 
@@ -185,12 +193,12 @@ end
 function Efield(M::AxisymmetricEquilibrium, r, z, vrot::AbstractVector)
     psi = M.psi_rz(r,z)
     gval = M.g(psi)
-    grad_psi = SVector{2}(Interpolations.gradient(M.psi_rz, r, z))
-    B = SVector{3}(grad_psi[2]/r, -grad_psi[1]/r, gval/r)
+    grad_psi = M.alpha*SVector{2}(Interpolations.gradient(M.psi_rz, r, z))
+    B = SVector{3}(-grad_psi[2]/r, grad_psi[1]/r, gval/r)
 
     grad_psi = grad_psi/norm(grad_psi)
     qval = M.q(psi)
-    dp = Interpolations.gradient(M.p, psi)[1]
+    dp = M.alpha*Interpolations.gradient(M.p, psi)[1]
     gradp = SVector{3}(dp*grad_psi[1], zero(grad_psi[1]), dp*grad_psi[2])
 
     E = cross(vrot,B) .+ gradp/qval
