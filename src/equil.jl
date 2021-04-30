@@ -240,7 +240,7 @@ end
 function curlB(M::AxisymmetricEquilibrium, r, z)
     J = ForwardDiff.jacobian(x->Bfield(M,x[1],x[3]),SVector{3}(r,0.0,z))
     B = Bfield(M,r,z)
-    return SVector{3}(J[3,2]/r - J[2,3], J[1,3] - J[3,1], (B[2]/r + J[2,1]) - J[1,2])
+    return SVector{3}(J[3,2]/r - J[2,3], J[1,3] - J[3,1], (B[2]/r + J[2,1]) - J[1,2]/r)
 end
 
 function curlB(M::AxisymmetricEquilibrium, x, y, z)
