@@ -45,5 +45,16 @@ r4 = (M4.axis[1]+0.1,M4.axis[2])
         @test curlB(M3,r3...) ≈ mu0*Jfield(M3,r3...) rtol=0.01
         @test curlB(M4,r4...) ≈ mu0*Jfield(M4,r4...) rtol=0.01
     end
-end
 
+    @testset verbose = true "COCOS Tests" begin
+        @test identify_cocos(g1; clockwise_phi = false) == (1,)
+        @test identify_cocos(g2; clockwise_phi = false) == (5,)
+        @test identify_cocos(g3; clockwise_phi = false) == (3,)
+        @test identify_cocos(g4; clockwise_phi = false) == (7,)
+
+        @test check_cocos(g1, 1)
+        @test check_cocos(g2, 5)
+        @test check_cocos(g3, 3)
+        @test check_cocos(g4, 7)
+    end
+end

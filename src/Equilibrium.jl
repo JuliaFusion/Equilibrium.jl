@@ -11,7 +11,7 @@ using StaticArrays
 const mu0 = 4*pi*1e-7
 
 include("cocos.jl")
-export COCOS, cocos, check, transforms
+export COCOS, cocos, check_cocos, identify_cocos
 
 include("equil.jl")
 export AxisymmetricEquilibrium

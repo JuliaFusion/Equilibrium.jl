@@ -8,6 +8,29 @@ struct COCOS
     sign_pprime_pos::Int # +1 or -1, depending if dp/dpsi is positive or negative with Ip and B0 positive
 end
 
+function Base.show(io::IO, CC::COCOS)
+    println(io, "COCOS = $(CC.cocos)")
+    println(io, " e_Bp  = $(CC.exp_Bp)")
+    println(io, " σ_Bp  = $(CC.sigma_Bp)")
+
+    rpz = Dict(1=>"(R,Φ,Z)", -1=>"(R,Z,Φ)")
+    rpz_dir = Dict(1=>"CCW", -1=>"CW")
+    rhotp = Dict(1=>"(ρ,θ,Φ)", -1=>"(ρ,Φ,θ)")
+    rhotp_dir = Dict(1=>"CW", -1=>"CCW")
+
+    println(io, " σ_RΦZ = $(rpz[CC.sigma_RpZ]): $(CC.sigma_RpZ)")
+    println(io, " σ_ρθΦ = $(rhotp[CC.sigma_rhotp]): $(CC.sigma_rhotp)")
+    println(io, " Φ from top: $(rpz_dir[CC.sigma_RpZ])")
+    println(io, " θ from front: $(rhotp_dir[CC.sigma_RpZ*CC.sigma_rhotp])")
+
+    inc = Dict(1=>"Increasing", -1=>"Decreasing")
+    println(io, " ψ_ref: $(inc[CC.sigma_Bp])")
+    println(io, " sign(q) = $(CC.sigma_rhotp)")
+    print(io, " sign(p') = $(-CC.sigma_Bp)")
+end
+
+Base.broadcastable(CC::COCOS) = (CC,)
+
 """
 Returns COCOS structure given the ID number
 """
@@ -41,98 +64,186 @@ function cocos(cocos_in)
 end
 
 """
-Returns True if GEQDSKFile is consistant with given COCOS
+Returns True if equilibrium quantities are consistant with given COCOS
 """
-function check(g::GEQDSKFile, cc::COCOS; verbose=false)
+function check_cocos(B0, Ip, F::AbstractVector, pprime::AbstractVector,
+                     q::AbstractVector, psi::AbstractVector,
+                     cc::COCOS; verbose=false)
 
     valid = true
-    qsign = sign(g.qpsi[end])
-    if qsign*cc.sigma_rhotp*sign(g.current)*sign(g.bcentr) < 0
+    qsign = sign(q[end])
+    if qsign*cc.sigma_rhotp*sign(Ip)*sign(B0) < 0
         verbose && @warn "sign(q[end]) ≠ sigma_rhotp*sign(Ip)*sign(B0)"
         valid = false
     end
 
-    if all(sign.(g.fpol)*sign(g.bcentr) .< 0)
+    if all(sign.(F)*sign(B0) .< 0)
         verbose && @warn "Signs of F and B0 are not consistant"
         valid = false
     end
 
-    if sign(g.sibry - g.simag)*cc.sigma_Bp*sign(g.current) < 0
-        if g.sibry > g.simag
-            verbose && @warn "psi should be decreasing with sign(Ip) = $(sign(g.current)) for COCOS = $(cc.cocos)"
+    if sign(psi[end] - psi[1])*cc.sigma_Bp*sign(Ip) < 0
+        if psi[end] > psi[1]
+            verbose && @warn "psi should be decreasing with sign(Ip) = $(sign(Ip)) for COCOS = $(cc.cocos)"
         else
-            verbose && @warn "psi should be increasing with sign(Ip) = $(sign(g.current)) for COCOS = $(cc.cocos)"
+            verbose && @warn "psi should be increasing with sign(Ip) = $(sign(Ip)) for COCOS = $(cc.cocos)"
         end
         valid = false
-    elseif sign(sum(g.pprime))*sign(g.current)*cc.sigma_Bp > 0
-        verbose && @warn "sign(pprime) should be $(-sign(g.current)*cc.sigma_Bp)"
+    elseif sign(sum(pprime))*sign(Ip)*cc.sigma_Bp > 0
+        verbose && @warn "sign(pprime) should be $(-sign(Ip)*cc.sigma_Bp)"
         valid = false
     end
 
     return valid
 end
 
-"""
-Returns the native COCOS that an unmodified gEQDSK would obey, defined by sign(Bt) and sign(Ip)
-In order for psi to increase from axis to edge and for q to be positive:
-All use sigma_RpZ=+1 (phi is counterclockwise) and exp_Bp=0 (psi is flux/2.*pi)
-We want
-sign(psi_edge-psi_axis) = sign(Ip)*sigma_Bp > 0  (psi always increases in gEQDSK)
-sign(q) = sign(Ip)*sign(Bt)*sigma_rhotp > 0      (q always positive in gEQDSK)
-::
-    ============================================
-    Bt    Ip    sigma_Bp    sigma_rhotp    COCOS
-    ============================================
-    +1    +1       +1           +1           1
-    +1    -1       -1           -1           3
-    -1    +1       +1           -1           5
-    -1    -1       -1           +1           7
-"""
-function cocos(B0,Ip)
-    cc = cocos(1)
-    sign_Bt = Int(cc.sigma_RpZ*sign(B0))
-    sign_Ip = Int(cc.sigma_RpZ*sign(Ip))
+function _transforms(cc_in::COCOS, cc_out::COCOS;
+                    sigma_Ip::Union{NTuple{2,Int},Nothing} = nothing,
+                    sigma_B0::Union{NTuple{2,Int},Nothing} = nothing,
+                    ld::NTuple{2,Int} = (1,1),
+                    lB::NTuple{2,Int} = (1,1),
+                    exp_mu0::NTuple{2,Int} = (1,1))
 
-    g_cocos = Dict((+1, +1) => 1, # +Bt, +Ip
-                   (+1, -1) => 3, # +Bt, -Ip
-                   (-1, +1) => 5, # -Bt, +Ip
-                   (-1, -1) => 7, # -Bt, -Ip
-                   (+1,  0) => 1, # +Bt, No current
-                   (-1,  0) => 3) # -Bt, No current
+    ld_eff = ld[2]/ld[1]
+    lB_eff = lB[2]/lB[1]
+    exp_mu0_eff = exp_mu0[2] - exp_mu0[1]
 
-    return g_cocos[(sign_Bt,sign_Ip)]
-end
+    sigma_RpZ_eff = cc_in.sigma_RpZ * cc_out.sigma_RpZ
 
-function cocos(g::GEQDSKFile)
-    return cocos(g.bcentr,g.current)
-end
+    if sigma_Ip == nothing
+        sigma_Ip_eff = cc_in.sigma_RpZ * cc_out.sigma_RpZ
+    else
+        sigma_Ip_eff = sigma_Ip[1]*sigma_Ip[2]
+    end
 
-function transforms(cc_in::COCOS, cc_out::COCOS)
-    sigma_Ip_eff = cc_in.sigma_RpZ * cc_out.sigma_RpZ
-    sigma_B0_eff = cc_in.sigma_RpZ * cc_out.sigma_RpZ
+    if sigma_Bp == nothing
+        sigma_B0_eff = cc_in.sigma_RpZ * cc_out.sigma_RpZ
+    else
+        sigma_B0_eff = sigma_B0[1]*sigma_B0[2]
+    end
+
     sigma_Bp_eff = cc_in.sigma_Bp * cc_out.sigma_Bp
     exp_Bp_eff = cc_out.exp_Bp - cc_in.exp_Bp
     sigma_rhotp_eff = cc_in.sigma_rhotp * cc_out.sigma_rhotp
 
+    mu0 = 4*pi*1e-7
+
     transforms = Dict()
-    transforms["1/PSI"] = sigma_Ip_eff * sigma_Bp_eff / ((2*pi)^exp_Bp_eff)
-    transforms["invPSI"] = transforms["1/PSI"]
-    transforms["dPSI"] = transforms["1/PSI"]
-    transforms["F_FPRIME"] = transforms["dPSI"]
-    transforms["PPRIME"] = transforms["dPSI"]
-    transforms["PSI"] = sigma_Ip_eff * sigma_Bp_eff * ((2pi)^exp_Bp_eff)
-    transforms["Q"] = sigma_Ip_eff * sigma_B0_eff * sigma_rhotp_eff
-    transforms["TOR"] = sigma_B0_eff
-    transforms["BT"] = transforms["TOR"]
-    transforms["IP"] = transforms["TOR"]
-    transforms["F"] = transforms["TOR"]
-    transforms["POL"] = sigma_B0_eff * sigma_rhotp_eff
-    transforms["BP"] = transforms["POL"]
+    transforms["PSI"]      = lB_eff * ld_eff^2 * sigma_Ip_eff * sigma_Bp_eff * ((2pi)^exp_Bp_eff) * ld_eff^2 * lB_eff
+    transforms["ψ"]        = transforms["PSI"]
+    transforms["TOR"]      = lB_eff * ld_eff^2 * sigma_B0_eff
+    transforms["Φ"]        = transforms["TOR"]
+    transforms["PPRIME"]   = (lB_eff/((ld_eff^2)*(mu0^exp_mu0_eff))) * sigma_Ip_eff * sigma_Bp_eff / ((2pi)^exp_Bp_eff)
+    transforms["F_FPRIME"] = lB_eff * sigma_Ip_eff * sigma_Bp_eff / ((2pi)^exp_Bp_eff)
+    transforms["B"]        = lB_eff * sigma_B0_eff
+    transforms["F"]        = sigma_B0_eff * ld_eff * lB_eff
+    transforms["I"]        = sigma_Ip_eff * ld_eff * lB_eff / (mu0^exp_m0_eff)
+    transforms["J"]        = sigma_ip_eff * lB_eff/((mu0^exp_m0_eff)*ld_eff)
+    transforms["Q"]        = sigma_Ip_eff * sigma_B0_eff * sigma_rhotp_eff
 
     return transforms
 end
 
+function _transforms(cc_in::Int, cc_out::Int; kwargs...)
+    _transforms(cocos(cc_in), cocos(cc_out); kwargs...)
+end
 
-function transforms(cc_in::Int, cc_out::Int)
-    transforms(cocos(cc_in), cocos(cc_out))
+"""
+    identify_cocos(B0, Ip, q, psi, clockwise_phi, a)
+
+Utility function to identify COCOS coordinate system
+If multiple COCOS are possible, then all are returned.
+:param B0: toroidal magnetic field (with sign)
+:param Ip: plasma current (with sign)
+:param q: safety factor profile (with sign) as function of psi
+:param psi: poloidal flux as function of psi(with sign)
+:param clockwise_phi: (optional) [True, False] if phi angle is defined clockwise or not
+                      This is required to identify odd Vs even COCOS
+                      Note that this cannot be determined from the output of a code.
+                      An easy way to determine this is to answer the question: is positive B0 clockwise?
+:param a: (optional) flux surfaces minor radius as function of psi
+          This is required to identify 2*pi term in psi definition
+:return: list with possible COCOS
+"""
+function identify_cocos(B0, Ip, q::AbstractVector, psi::AbstractVector,
+                        clockwise_phi::Union{Bool,Nothing} = nothing,
+                        a::Union{AbstractVector,Nothing} = nothing)
+
+    if clockwise_phi == nothing
+        sigma_rpz = clockwise_phi
+    elseif clockwise_phi
+        #TODO: https://github.com/gafusion/omas/issues/160
+        #Assuming bug is real
+        sigma_rpz = -1
+    else
+        sigma_rpz = +1
+    end
+
+    # return both even and odd COCOS if clockwise_phi is not provided
+    if sigma_rpz == nothing
+        tmp  = identify_cocos(B0, Ip, q, psi, true, a)
+        tmp2 = identify_cocos(B0, Ip, q, psi, false, a)
+        return (tmp..., tmp2...)
+    end
+
+    sigma_Ip = sign(Ip)
+    sigma_B0 = sign(B0)
+    sign_dpsi_pos = sign(psi[2]-psi[1])
+    sign_q_pos = sign(q[1])
+
+    sigma_Bp = sign_dpsi_pos / sigma_Ip
+    sigma_rhotp = sign_q_pos / (sigma_Ip * sigma_B0)
+
+    sigma2cocos = Dict(
+        (+1, +1, +1) => 1,  # +Bp, +rpz, +rtp
+        (+1, -1, +1) => 2,  # +Bp, -rpz, +rtp
+        (-1, +1, -1) => 3,  # -Bp, +rpz, -rtp
+        (-1, -1, -1) => 4,  # -Bp, -rpz, -rtp
+        (+1, +1, -1) => 5,  # +Bp, +rpz, -rtp
+        (+1, -1, -1) => 6,  # +Bp, -rpz, -rtp
+        (-1, +1, +1) => 7,  # -Bp, +rpz, +rtp
+        (-1, -1, +1) => 8)  # -Bp, -rpz, +rtp
+
+    # identify 2*pi term in psi definition based on q estimate
+    if a != nothing
+        index = argmin(abs.(q))
+        if index == 1
+            index += 1
+        end
+
+        q_estimate = abs.((pi * B0 * (a .- a[1]).^2) / (psi .- psi[1]))
+
+        if abs(q_estimate[index] - q[index]) < abs(q_estimate[index] / (2 * pi) - q[index])
+            eBp = 1
+        else
+            eBp = 0
+        end
+
+        return (sigma2cocos[(sigma_Bp, sigma_rpz, sigma_rhotp)] + 10 * eBp, )
+    else
+        # return COCOS<10 as well as COCOS>10 if a is not provided
+        return (sigma2cocos[(sigma_Bp, sigma_rpz, sigma_rhotp)], sigma2cocos[(sigma_Bp, sigma_rpz, sigma_rhotp)] + 10)
+    end
+end
+
+# ----- GEQDSK Interface -----
+
+function check_cocos(g::GEQDSKFile, cc::COCOS; kwargs...)
+    return check_cocos(g.bcentr, g.current, g.fpol, g.pprime, g.qpsi, g.psi, cc; kwargs...)
+end
+
+function check_cocos(g::GEQDSKFile, cc::Int; kwargs...)
+    return check_cocos(g, cocos(cc); kwargs...)
+end
+
+function identify_cocos(g::GEQDSKFile; clockwise_phi = nothing)
+    return filter(x -> x < 10, identify_cocos(g.bcentr, g.current, g.qpsi, g.psi, clockwise_phi, nothing))
+end
+
+function cocos(g::GEQDSKFile; kwargs...)
+    cc = identify_cocos(g; kwargs...)
+    if length(cc) > 1
+        @warn "Unable to determine unique COCOS. Try providing clockwise_phi::Bool keyword. Possibilities are $cc"
+    end
+    return cocos(cc[1])
 end
