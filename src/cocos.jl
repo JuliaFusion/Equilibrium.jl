@@ -8,6 +8,8 @@ struct COCOS
     sign_pprime_pos::Int # +1 or -1, depending if dp/dpsi is positive or negative with Ip and B0 positive
 end
 
+cocos(CC::COCOS) = CC
+
 function Base.show(io::IO, CC::COCOS)
     println(io, "COCOS = $(CC.cocos)")
     println(io, " e_Bp  = $(CC.exp_Bp)")
@@ -24,9 +26,9 @@ function Base.show(io::IO, CC::COCOS)
     println(io, " θ from front: $(rhotp_dir[CC.sigma_RpZ*CC.sigma_rhotp])")
 
     inc = Dict(1=>"Increasing", -1=>"Decreasing")
-    println(io, " ψ_ref: $(inc[CC.sigma_Bp])")
-    println(io, " sign(q) = $(CC.sigma_rhotp)")
-    print(io, " sign(p') = $(-CC.sigma_Bp)")
+    println(io, " ψ_ref: $(inc[CC.sigma_Bp]) assuming +Ip, +B0")
+    println(io, " sign(q) = $(CC.sign_q_pos) assuming +Ip, +B0")
+    print(io, " sign(p') = $(CC.sign_pprime_pos) assuming +Ip, +B0")
 end
 
 Base.broadcastable(CC::COCOS) = (CC,)
@@ -97,12 +99,12 @@ function check_cocos(B0, Ip, F::AbstractVector, pprime::AbstractVector,
     return valid
 end
 
-function _transforms(cc_in::COCOS, cc_out::COCOS;
-                    sigma_Ip::Union{NTuple{2,Int},Nothing} = nothing,
-                    sigma_B0::Union{NTuple{2,Int},Nothing} = nothing,
-                    ld::NTuple{2,Int} = (1,1),
-                    lB::NTuple{2,Int} = (1,1),
-                    exp_mu0::NTuple{2,Int} = (1,1))
+function transform_cocos(cc_in::COCOS, cc_out::COCOS;
+                         sigma_Ip::Union{NTuple{2,Int},Nothing} = nothing,
+                         sigma_B0::Union{NTuple{2,Int},Nothing} = nothing,
+                         ld::NTuple{2,<:Real} = (1,1),
+                         lB::NTuple{2,<:Real} = (1,1),
+                         exp_mu0::NTuple{2,<:Real} = (1,1))
 
     ld_eff = ld[2]/ld[1]
     lB_eff = lB[2]/lB[1]
@@ -116,7 +118,7 @@ function _transforms(cc_in::COCOS, cc_out::COCOS;
         sigma_Ip_eff = sigma_Ip[1]*sigma_Ip[2]
     end
 
-    if sigma_Bp == nothing
+    if sigma_B0 == nothing
         sigma_B0_eff = cc_in.sigma_RpZ * cc_out.sigma_RpZ
     else
         sigma_B0_eff = sigma_B0[1]*sigma_B0[2]
@@ -129,6 +131,9 @@ function _transforms(cc_in::COCOS, cc_out::COCOS;
     mu0 = 4*pi*1e-7
 
     transforms = Dict()
+    transforms["R"]        = ld_eff
+    transforms["Z"]        = ld_eff
+    transforms["P"]        = (lB_eff^2)/(mu0^exp_mu0_eff)
     transforms["PSI"]      = lB_eff * ld_eff^2 * sigma_Ip_eff * sigma_Bp_eff * ((2pi)^exp_Bp_eff) * ld_eff^2 * lB_eff
     transforms["ψ"]        = transforms["PSI"]
     transforms["TOR"]      = lB_eff * ld_eff^2 * sigma_B0_eff
@@ -137,15 +142,15 @@ function _transforms(cc_in::COCOS, cc_out::COCOS;
     transforms["F_FPRIME"] = lB_eff * sigma_Ip_eff * sigma_Bp_eff / ((2pi)^exp_Bp_eff)
     transforms["B"]        = lB_eff * sigma_B0_eff
     transforms["F"]        = sigma_B0_eff * ld_eff * lB_eff
-    transforms["I"]        = sigma_Ip_eff * ld_eff * lB_eff / (mu0^exp_m0_eff)
-    transforms["J"]        = sigma_ip_eff * lB_eff/((mu0^exp_m0_eff)*ld_eff)
+    transforms["I"]        = sigma_Ip_eff * ld_eff * lB_eff / (mu0^exp_mu0_eff)
+    transforms["J"]        = sigma_Ip_eff * lB_eff/((mu0^exp_mu0_eff)*ld_eff)
     transforms["Q"]        = sigma_Ip_eff * sigma_B0_eff * sigma_rhotp_eff
 
     return transforms
 end
 
-function _transforms(cc_in::Int, cc_out::Int; kwargs...)
-    _transforms(cocos(cc_in), cocos(cc_out); kwargs...)
+function transform_cocos(cc_in::Union{Int,COCOS}, cc_out::Union{Int,COCOS}; kwargs...)
+    transform_cocos(cocos(cc_in), cocos(cc_out); kwargs...)
 end
 
 """
@@ -243,7 +248,27 @@ end
 function cocos(g::GEQDSKFile; kwargs...)
     cc = identify_cocos(g; kwargs...)
     if length(cc) > 1
-        @warn "Unable to determine unique COCOS. Try providing clockwise_phi::Bool keyword. Possibilities are $cc"
+        @error "Unable to determine unique COCOS. Try providing clockwise_phi::Bool keyword. Possibilities are $cc"
     end
     return cocos(cc[1])
 end
+
+function transform_cocos(g::GEQDSKFile, cc_in::Union{Int,COCOS}, cc_out::Union{Int,COCOS}; kwargs...)
+    return transform_cocos(g, cocos(cc_in), cocos(cc_out); kwargs...)
+end
+
+function transform_cocos(g::GEQDSKFile, cc_in::COCOS, cc_out::COCOS; kwargs...)
+    T = transform_cocos(cc_in, cc_out; kwargs...)
+
+    g_new = GEQDSKFile(g.file*" w/ cocos = $(cc_out.cocos)", g.nw, g.nh,
+                       g.r*T["R"], g.z*T["Z"], g.rdim*T["R"], g.zdim*T["Z"],
+                       g.rleft*T["R"], g.zmid*T["Z"], g.nbbbs, g.rbbbs*T["R"], g.zbbbs*T["Z"],
+                       g.limitr, g.rlim*T["R"], g.zlim*T["Z"], g.rcentr*T["R"], g.bcentr*T["B"],
+                       g.rmaxis*T["R"], g.zmaxis*T["Z"], g.simag*T["PSI"], g.sibry*T["PSI"],
+                       g.psi*T["PSI"], g.current*T["I"], g.fpol*T["F"],
+                       g.pres*T["P"], g.ffprim*T["F_FPRIME"], g.pprime*T["PPRIME"],
+                       g.qpsi*T["Q"], g.psirz*T["PSI"])
+
+    return g_new
+end
+

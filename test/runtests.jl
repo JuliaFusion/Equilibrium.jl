@@ -8,6 +8,12 @@ g2 = readg(dir*"/g133221.01150") # (-Bt, +Ip)
 g3 = readg(dir*"/g159177.02700") # (+Bt, -Ip)
 g4 = readg(dir*"/g153298.04400") # (-Bt, -Ip)
 
+# COCOS for the GEQDSK files
+cc1 = 1
+cc2 = 5
+cc3 = 3
+cc4 = 7
+
 M1 = AxisymmetricEquilibrium(g1)
 M2 = AxisymmetricEquilibrium(g2)
 M3 = AxisymmetricEquilibrium(g3)
@@ -46,15 +52,28 @@ r4 = (M4.axis[1]+0.1,M4.axis[2])
         @test curlB(M4,r4...) ≈ mu0*Jfield(M4,r4...) rtol=0.01
     end
 
-    @testset verbose = true "COCOS Tests" begin
-        @test identify_cocos(g1; clockwise_phi = false) == (1,)
-        @test identify_cocos(g2; clockwise_phi = false) == (5,)
-        @test identify_cocos(g3; clockwise_phi = false) == (3,)
-        @test identify_cocos(g4; clockwise_phi = false) == (7,)
+    @testset verbose = true "COCOS Identify" begin
+        @test identify_cocos(g1; clockwise_phi = false) == (cc1,)
+        @test identify_cocos(g2; clockwise_phi = false) == (cc2,)
+        @test identify_cocos(g3; clockwise_phi = false) == (cc3,)
+        @test identify_cocos(g4; clockwise_phi = false) == (cc4,)
+    end
 
-        @test check_cocos(g1, 1)
-        @test check_cocos(g2, 5)
-        @test check_cocos(g3, 3)
-        @test check_cocos(g4, 7)
+    @testset verbose = true "COCOS Consistancy" begin
+        @test check_cocos(g1, cc1)
+        @test check_cocos(g2, cc2)
+        @test check_cocos(g3, cc3)
+        @test check_cocos(g4, cc4)
+    end
+
+    @testset verbose = true "COCOS GEQDSK Transformation" begin
+        for (cc_in, g) in ((cc1, g1), (cc2,g2), (cc3, g3), (cc4, g4))
+            for cc = 1:8
+                _cc = cocos(cc)
+                g_new = transform_cocos(g, cc_in, _cc)
+                @test identify_cocos(g_new, clockwise_phi = _cc.sigma_RpZ < 0) == (cc,)
+                @test check_cocos(g_new, cc)
+            end
+        end
     end
 end
