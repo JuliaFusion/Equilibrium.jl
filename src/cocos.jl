@@ -1,3 +1,20 @@
+"""
+COCOS Structure
+
+`cocos::Int`           = COCOS ID number
+
+`exp_Bp::Int`          = 0 or 1, depending if psi is already divided by 2pi or not, respectively
+
+`sigma_Bp::Int`        = +1 or -1, depending if psi is increasing or decreasing with Ip and B0 positive
+
+`sigma_RpZ::Int`       = +1 or -1, depending if (R,phi,Z) is right-handed or (R,Z,phi), respectively
+
+`sigma_rhotp::Int`     = +1 or -1, depending if (rho, theta, phi) is right-handed or (rho,phi,theta), repectively
+
+`sign_q_pos::Int`      = +1 or -1, depending if q is positive or negative with Ip and B0 positive
+
+`sign_pprime_pos::Int` = +1 or -1, depending if dp/dpsi is positive or negative with Ip and B0 positive
+"""
 struct COCOS
     cocos::Int           # COCOS ID number
     exp_Bp::Int          # 0 or 1, depending if psi is already divided by 2pi or not, respectively
@@ -33,8 +50,52 @@ end
 
 Base.broadcastable(CC::COCOS) = (CC,)
 
+function _cylindrical_cocos(::Val{1}, r, phi, z)
+    return SVector{3}(r, phi, z)
+end
+
+function _cylindrical_cocos(::Val{-1}, r, phi, z)
+    return SVector{3}(r, z, phi)
+end
+
 """
-Returns COCOS structure given the ID number
+    cylindrical_vector(c::COCOS, r, phi, z) -> SVector{3}
+
+Returns the cylindrical vector according to the provided COCOS.
+
+`cocos.sigma_RpZ = +1 -> SVector{3}(r, phi, z)`
+
+`cocos.sigma_RpZ = -1 -> SVector{3}(r, z, phi)`
+
+"""
+function cylindrical_vector(c::COCOS, r, phi, z)
+    return _cylindrical_cocos(Val(c.sigma_RpZ), r, phi, z)
+end
+
+function _poloidal_cocos(::Val{1}, rho, theta, phi)
+    return SVector{3}(rho, theta, phi)
+end
+
+function _poloidal_cocos(::Val{-1}, rho, theta, phi)
+    return SVector{3}(rho, phi, theta)
+end
+
+"""
+    poloidal_vector(c::COCOS, rho, theta, phi) -> SVector{3}
+
+Returns the poloidal vector according to the provided COCOS.
+
+cocos.sigma_rhotp = +1 -> SVector{3}(rho, theta, phi)
+cocos.sigma_rhotp = -1 -> SVector{3}(rho, phi, theta)
+"""
+function poloidal_vector(c::COCOS, rho, theta, phi)
+    return _poloidal_cocos(Val(c.sigma_rhotp), rho, theta, phi)
+end
+
+"""
+    cocos(cocos_ID) -> COCOS
+
+Returns `COCOS` structure given the `cocos_ID` number
 """
 function cocos(cocos_in)
 
@@ -66,11 +127,27 @@ function cocos(cocos_in)
 end
 
 """
+    check_cocos(B0, Ip, F::AbstractVector, pprime::AbstractVector, q::AbstractVector, psi::AbstracVector, cc::COCOS; verbose = false) -> Bool
+
 Returns True if equilibrium quantities are consistant with given COCOS
+
+`B0` - Toroidal magnetic field
+
+`Ip` - Plasma current
+
+`F::AbstractVector` - Poloidal current as a function of `psi`
+
+`pprime::AbstracVector` - Pressure gradient w.r.t. `psi` as a function of `psi`
+
+`psi::AbstractVector` - Poloidal flux
+
+`cc::Union{Int,COCOS}` - COCOS structure or ID
 """
 function check_cocos(B0, Ip, F::AbstractVector, pprime::AbstractVector,
                      q::AbstractVector, psi::AbstractVector,
-                     cc::COCOS; verbose=false)
+                     cc::Union{Int,COCOS}; verbose=false)
+
+    cc = cocos(cc)
 
     valid = true
     qsign = sign(q[end])
@@ -99,12 +176,29 @@ function check_cocos(B0, Ip, F::AbstractVector, pprime::AbstractVector,
     return valid
 end
 
+"""
+    transform_cocos(cc_in::Union{Int,COCOS}, cc_out::Union{Int,COCOS};
+                    sigma_Ip = nothing, sigma_B0=nothing,
+                    ld = (1,1), lB = (1,1), exp_mu0 = (0,0)) -> Dict
+
+Returns a dictionary of the multiplicative factors to transform COCOS from `cc_in` to `cc_out`
+
+`sigma_Ip::Union{NTuple{2,Int},Nothing}` - A tuple of the (Input, Output) current sign or nothing
+
+`sigma_B0::Union{NTuple{2,Int},Nothing}` - A tuple of the (Input, Output) toroidal field sign or nothing
+
+`ld::NTuple{2,<:Real}` - A tuple of the (Input, Output) length scale factor. Default = (1,1)
+
+`lB::NTuple{2,<:Real}` - A tuple of the (Input, Output) magnetic field scale factor. Default = (1,1)
+
+`exp_mu0::NTuple{2,<:Real}` - A tuple of the (Input, Output) mu0 exponent (0, 1). Default = (0,0)
+"""
 function transform_cocos(cc_in::COCOS, cc_out::COCOS;
                          sigma_Ip::Union{NTuple{2,Int},Nothing} = nothing,
                          sigma_B0::Union{NTuple{2,Int},Nothing} = nothing,
                          ld::NTuple{2,<:Real} = (1,1),
                          lB::NTuple{2,<:Real} = (1,1),
-                         exp_mu0::NTuple{2,<:Real} = (1,1))
+                         exp_mu0::NTuple{2,<:Real} = (0,0))
 
     ld_eff = ld[2]/ld[1]
     lB_eff = lB[2]/lB[1]
@@ -154,21 +248,22 @@ function transform_cocos(cc_in::Union{Int,COCOS}, cc_out::Union{Int,COCOS}; kwar
 end
 
 """
-    identify_cocos(B0, Ip, q, psi, clockwise_phi, a)
+    identify_cocos(B0, Ip, q, psi, clockwise_phi, a) -> List of possible COCOS IDs
 
-Utility function to identify COCOS coordinate system
-If multiple COCOS are possible, then all are returned.
-:param B0: toroidal magnetic field (with sign)
-:param Ip: plasma current (with sign)
-:param q: safety factor profile (with sign) as function of psi
-:param psi: poloidal flux as function of psi(with sign)
-:param clockwise_phi: (optional) [True, False] if phi angle is defined clockwise or not
-                      This is required to identify odd Vs even COCOS
-                      Note that this cannot be determined from the output of a code.
-                      An easy way to determine this is to answer the question: is positive B0 clockwise?
-:param a: (optional) flux surfaces minor radius as function of psi
+Utility function to identify COCOS coordinate system. If multiple COCOS are possible, then all are returned.
+
+`B0` - toroidal magnetic field (with sign)
+
+`Ip` - plasma current (with sign)
+
+`q`  -  safety factor profile (with sign) as function of psi
+
+`psi::AbstractVector` -  poloidal flux as function of psi(with sign)
+
+`clockwise_phi::Bool` - (optional) [True, False] if phi angle is defined clockwise or not. This is required to identify odd Vs even COCOS. Note that this cannot be determined from the output of a code.
+
+`a::AbstractVector` - (optional) flux surfaces minor radius as function of psi
           This is required to identify 2*pi term in psi definition
-:return: list with possible COCOS
 """
 function identify_cocos(B0, Ip, q::AbstractVector, psi::AbstractVector,
                         clockwise_phi::Union{Bool,Nothing} = nothing,
@@ -233,18 +328,29 @@ end
 
 # ----- GEQDSK Interface -----
 
-function check_cocos(g::GEQDSKFile, cc::COCOS; kwargs...)
-    return check_cocos(g.bcentr, g.current, g.fpol, g.pprime, g.qpsi, g.psi, cc; kwargs...)
+"""
+    check_cocos(g::GEQDSKFIle, cc::Union{Int,COCOS}) -> Bool
+
+Checks if `GEQDSKFile` is consistant with the given cocos, `cc`
+"""
+function check_cocos(g::GEQDSKFile, cc::Union{Int,COCOS}; kwargs...)
+    return check_cocos(g.bcentr, g.current, g.fpol, g.pprime, g.qpsi, g.psi, cocos(cc); kwargs...)
 end
 
-function check_cocos(g::GEQDSKFile, cc::Int; kwargs...)
-    return check_cocos(g, cocos(cc); kwargs...)
-end
+"""
+    identify_cocos(g::GEQDSKFIle; clockwise_phi=nothing) -> List of possible COCOS IDs
 
+Identifies possible `GEQDSKFile` COCOS. A unique identification requires setting the `clockwise_phi` keyword.
+"""
 function identify_cocos(g::GEQDSKFile; clockwise_phi = nothing)
     return filter(x -> x < 10, identify_cocos(g.bcentr, g.current, g.qpsi, g.psi, clockwise_phi, nothing))
 end
 
+"""
+    cocos(g::GEQDSKFile; kwargs...) -> COCOS
+
+Identifies and returns `GEQDSKFile` `COCOS`. A unique identification requires setting the `clockwise_phi` keyword.
+"""
 function cocos(g::GEQDSKFile; kwargs...)
     cc = identify_cocos(g; kwargs...)
     if length(cc) > 1
@@ -253,11 +359,12 @@ function cocos(g::GEQDSKFile; kwargs...)
     return cocos(cc[1])
 end
 
-function transform_cocos(g::GEQDSKFile, cc_in::Union{Int,COCOS}, cc_out::Union{Int,COCOS}; kwargs...)
-    return transform_cocos(g, cocos(cc_in), cocos(cc_out); kwargs...)
-end
+"""
+    transform_cocos(g::GEQDSKFile, cc_in::Union{Int,COCOS}, cc_out::Union{Int,COCOS}; kwargs...) -> GEQDSKFile
 
-function transform_cocos(g::GEQDSKFile, cc_in::COCOS, cc_out::COCOS; kwargs...)
+Transforms the given `GEQDSKFile` with `COCOS=cc_in`, and returns a `GEQDSKFile` with `COCOS=cc_out`.
+"""
+function transform_cocos(g::GEQDSKFile, cc_in::Union{Int,COCOS}, cc_out::Union{Int,COCOS}; kwargs...)
     T = transform_cocos(cc_in, cc_out; kwargs...)
 
     g_new = GEQDSKFile(g.file*" w/ cocos = $(cc_out.cocos)", g.nw, g.nh,
