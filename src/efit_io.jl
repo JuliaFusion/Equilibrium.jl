@@ -22,7 +22,7 @@ function Limiter(g::GEQDSKFile)
     return lim
 end
 
-function read_geqdsk(gfile)
+function read_geqdsk(gfile; kwargs...)
     g = readg(gfile)
-    return AxisymmetricEquilibrium(g), Limiter(g)
+    return AxisymmetricEquilibrium(g; kwargs...), Limiter(g)
 end
