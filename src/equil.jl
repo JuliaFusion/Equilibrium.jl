@@ -19,10 +19,18 @@ end
 function AxisymmetricEquilibrium(cc::COCOS, r::AbstractRange{T}, z::AbstractRange{T}, psi::AbstractRange{T}, psi_rz, g, p, q, phi, axis::NTuple{2,T}) where {T <: Real}
 
     psi_rz_itp = CubicSplineInterpolation((r,z), psi_rz, extrapolation_bc=Flat())
-    g_itp = CubicSplineInterpolation(psi, g, extrapolation_bc=Flat())
-    p_itp = CubicSplineInterpolation(psi, p, extrapolation_bc=Flat())
-    q_itp = CubicSplineInterpolation(psi, q, extrapolation_bc=Flat())
-    phi_itp = CubicSplineInterpolation(psi, phi, extrapolation_bc=Flat())
+    if step(psi) > 0
+        g_itp = CubicSplineInterpolation(psi, g, extrapolation_bc=Flat())
+        p_itp = CubicSplineInterpolation(psi, p, extrapolation_bc=Flat())
+        q_itp = CubicSplineInterpolation(psi, q, extrapolation_bc=Flat())
+        phi_itp = CubicSplineInterpolation(psi, phi, extrapolation_bc=Flat())
+    else # CubicSplineInterpolation doesn't like decreasing psi so reverse them
+        g_itp = CubicSplineInterpolation(reverse(psi), reverse(g), extrapolation_bc=Flat())
+        p_itp = CubicSplineInterpolation(reverse(psi), reverse(p), extrapolation_bc=Flat())
+        q_itp = CubicSplineInterpolation(reverse(psi), reverse(q), extrapolation_bc=Flat())
+        phi_itp = CubicSplineInterpolation(reverse(psi), reverse(phi), extrapolation_bc=Flat())
+    end
+
 
     b = [norm(Bfield(psi_rz_itp,g_itp,rr,zz,cc)) for rr in r, zz in z]
     b_itp = CubicSplineInterpolation((r,z),b,extrapolation_bc=Flat())
@@ -71,6 +79,8 @@ function EMFields(psi_rz, g, phi, r, z, rmaxis, zmaxis, cc)
     Bz = -cocos_factor*grad_psi[1]/r
     Bt = gval/r
 
+    B = SVector{3}(cylindrical_cocos(cc, BR, Bt, Bz))
+
     sign_theta = cc.sigma_RpZ*cc.sigma_rhotp # + CW, - CCW
     sign_Bp    = signTheta*sign((z-zmaxis)*BR - (r-rmaxis)*Bz) # sign(theta)*sign(r x B)
     Bpol = sign_Bp*sqrt(BR^2 + Bz^2)
@@ -82,7 +92,9 @@ function EMFields(psi_rz, g, phi, r, z, rmaxis, zmaxis, cc)
     Ez =  Er*grad_psi[2]/grad_psi_norm # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
     Et = zero(Ez)
 
-    return EMFields(psi, gval, cylindrical_vector(cc,BR,Bt,Bz), cylindrical_vector(cc,ER,Et,Ez))
+    E = SVector{3}(cylindrical_cocos(cc, ER, Et, Ez))
+
+    return EMFields(psi, gval, B, E)
 end
 
 function EMFields(M::AxisymmetricEquilibrium, r, z)
@@ -115,7 +127,7 @@ function Bfield(psi_rz, g, r, z, cc)
     bz = -cocos_factor*grad_psi[1]/r
     bt = gval/r
 
-    return cylindrical_vector(cc,br,bt,bz)
+    return SVector{3}(cylindrical_cocos(cc, br, bt, bz))
 end
 
 function Bfield(M::AxisymmetricEquilibrium, r, z)
@@ -147,7 +159,7 @@ function Jfield(psi_rz, g, p, r, z, cc)
     cocos_factor = -cc.sigma_Bp*((2pi)^cc.exp_Bp)
     jt = cocos_factor*(r*pp + gval*gp/(r*mu0))
 
-    return cylindrical_vector(cc,jr,jt,jz)
+    return SVector{3}(cylindrical_cocos(cc,jr,jt,jz))
 end
 
 function Jfield(M::AxisymmetricEquilibrium, r, z)
@@ -175,7 +187,7 @@ function Efield(psi_rz, phi, r, z, Bpol, cc)
     Ez = Er*grad_psi[2] # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
     Et = zero(Ez)
 
-    return cylindrical_vector(cc, ER, Et, Ez)
+    return SVector{3}(cylindrical_cocos(cc, ER, Et, Ez))
 end
 
 function Efield(M::AxisymmetricEquilibrium, r, z)
@@ -212,12 +224,12 @@ function Efield(M::AxisymmetricEquilibrium, r, z, vrot::AbstractVector)
     BR =  cocos_factor*grad_psi[2]/r
     Bz = -cocos_factor*grad_psi[1]/r
     Bt = gval/r
-    B = cylindrical_vector(cc, BR, Bt, Bz)
+    B = SVector{3}(cylindrical_cocos(cc, BR, Bt, Bz))
 
     grad_psi = grad_psi/norm(grad_psi)
     qval = M.q(psi)
     dp = Interpolations.gradient(M.p, psi)[1]
-    gradp = cylindrical_vector(cc, dp*grad_psi[1], zero(grad_psi[1]), dp*grad_psi[2])
+    gradp = SVector{3}(cylindrical_cocos(cc, dp*grad_psi[1], zero(grad_psi[1]), dp*grad_psi[2]))
 
     E = cross(vrot,B) .+ gradp/qval
     return E
@@ -252,7 +264,7 @@ end
 
 function gradB(M::AxisymmetricEquilibrium, r, z)
     gB_rz = Interpolations.gradient(M.b,r,z)
-    return cylindrical_vector(M.cocos, gB_rz[1], 0.0, gB_rz[2])
+    return SVector{3}(cylindrical_cocos(M.cocos, gB_rz[1], 0.0, gB_rz[2]))
 end
 
 function gradB(M::AxisymmetricEquilibrium, x, y, z)
@@ -267,7 +279,7 @@ function curlB(M::AxisymmetricEquilibrium, r, z)
     cc = M.cocos
     J = ForwardDiff.jacobian(x->Bfield(M,x[1],x[3]),SVector{3}(r,0.0,z))
     B = Bfield(M,r,z)
-    return cc.sigma_RpZ*cylindrical_vector(cc, J[3,2]/r - J[2,3], J[1,3] - J[3,1], (B[2]/r + J[2,1]) - J[1,2]/r)
+    return cc.sigma_RpZ*SVector{3}(cylindrical_cocos(cc, J[3,2]/r - J[2,3], J[1,3] - J[3,1], (B[2]/r + J[2,1]) - J[1,2]/r))
 end
 
 function curlB(M::AxisymmetricEquilibrium, x, y, z)

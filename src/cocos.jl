@@ -51,45 +51,87 @@ end
 Base.broadcastable(CC::COCOS) = (CC,)
 
 function _cylindrical_cocos(::Val{1}, r, phi, z)
-    return SVector{3}(r, phi, z)
+    return (r, phi, z)
 end
 
 function _cylindrical_cocos(::Val{-1}, r, phi, z)
-    return SVector{3}(r, z, phi)
+    return (r, z, phi)
 end
 
 """
-    cylindrical_vector(c::COCOS, r, phi, z) -> SVector{3}
+    cylindrical_cocos(c::COCOS, r, phi, z) -> NTuple{3}
 
-Returns the cylindrical vector according to the provided COCOS.
+Returns the right-handed cylindrical coordinate according to the provided COCOS.
 
-`cocos.sigma_RpZ = +1 -> SVector{3}(r, phi, z)`
+`cocos.sigma_RpZ = +1 -> (r, phi, z)`
 
-`cocos.sigma_RpZ = -1 -> SVector{3}(r, z, phi)`
+`cocos.sigma_RpZ = -1 -> (r, z, phi)`
 
 """
-function cylindrical_vector(c::COCOS, r, phi, z)
+function cylindrical_cocos(c::COCOS, r, phi, z)
     return _cylindrical_cocos(Val(c.sigma_RpZ), r, phi, z)
 end
 
+function _cylindrical_cocos_indices(::Val{1})
+    return (1,2,3)
+end
+
+function _cylindrical_cocos_indices(::Val{-1})
+    return (1,3,2)
+end
+
+"""
+    cylindrical_cocos_indices(c::COCOS) -> NTuple{3}
+
+Returns the indices of the r, phi, and z coordinates, respectively, relative to the provided COCOS.
+
+`cocos.sigma_RpZ = +1 -> (1,2,3)`
+
+`cocos.sigma_RpZ = -1 -> (1,3,2)`
+
+"""
+function cylindrical_cocos_indices(c::COCOS)
+    return _cylindrical_cocos_indices(Val(c.sigma_RpZ))
+end
+
 function _poloidal_cocos(::Val{1}, rho, theta, phi)
-    return SVector{3}(rho, theta, phi)
+    return (rho, theta, phi)
 end
 
 function _poloidal_cocos(::Val{-1}, rho, theta, phi)
-    return SVector{3}(rho, phi, theta)
+    return (rho, phi, theta)
 end
 
 """
-    poloidal_vector(c::COCOS, rho, theta, phi) -> SVector{3}
+    poloidal_cocos(c::COCOS, rho, theta, phi) -> NTuple{3}
 
-Returns the poloidal vector according to the provided COCOS.
+Returns the right-handed poloidal coordinate according to the provided COCOS.
 
-cocos.sigma_rhotp = +1 -> SVector{3}(rho, theta, phi)
-cocos.sigma_rhotp = -1 -> SVector{3}(rho, phi, theta)
+cocos.sigma_rhotp = +1 -> (rho, theta, phi)
+cocos.sigma_rhotp = -1 -> (rho, phi, theta)
 """
-function poloidal_vector(c::COCOS, rho, theta, phi)
+function poloidal_cocos(c::COCOS, rho, theta, phi)
     return _poloidal_cocos(Val(c.sigma_rhotp), rho, theta, phi)
+end
+
+function _poloidal_cocos_indices(::Val{1})
+    return (1,2,3)
+end
+
+function _poloidal_cocos_indices(::Val{-1})
+    return (1, 3, 2)
+end
+
+"""
+    poloidal_cocos_indices(c::COCOS) -> NTuple{3}
+
+Returns the indices of the rho, theta, and phi coordinates, respectively, relative to the provided COCOS.
+
+cocos.sigma_rhotp = +1 -> (1,2,3)
+cocos.sigma_rhotp = -1 -> (1,3,2)
+"""
+function poloidal_cocos_indices(c::COCOS, rho, theta, phi)
+    return _poloidal_cocos_indices(Val(c.sigma_rhotp), rho, theta, phi)
 end
 
 """
@@ -367,7 +409,7 @@ Transforms the given `GEQDSKFile` with `COCOS=cc_in`, and returns a `GEQDSKFile`
 function transform_cocos(g::GEQDSKFile, cc_in::Union{Int,COCOS}, cc_out::Union{Int,COCOS}; kwargs...)
     T = transform_cocos(cc_in, cc_out; kwargs...)
 
-    g_new = GEQDSKFile(g.file*" w/ cocos = $(cc_out.cocos)", g.nw, g.nh,
+    g_new = GEQDSKFile(g.file*" w/ cocos = $(cocos(cc_out).cocos)", g.nw, g.nh,
                        g.r*T["R"], g.z*T["Z"], g.rdim*T["R"], g.zdim*T["Z"],
                        g.rleft*T["R"], g.zmid*T["Z"], g.nbbbs, g.rbbbs*T["R"], g.zbbbs*T["Z"],
                        g.limitr, g.rlim*T["R"], g.zlim*T["Z"], g.rcentr*T["R"], g.bcentr*T["B"],
