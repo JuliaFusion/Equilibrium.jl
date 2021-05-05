@@ -82,7 +82,7 @@ function EMFields(psi_rz, g, phi, r, z, rmaxis, zmaxis, cc)
     B = SVector{3}(cylindrical_cocos(cc, BR, Bt, Bz))
 
     sign_theta = cc.sigma_RpZ*cc.sigma_rhotp # + CW, - CCW
-    sign_Bp    = signTheta*sign((z-zmaxis)*BR - (r-rmaxis)*Bz) # sign(theta)*sign(r x B)
+    sign_Bp    = sign_theta*sign((z-zmaxis)*BR - (r-rmaxis)*Bz) # sign(theta)*sign(r x B)
     Bpol = sign_Bp*sqrt(BR^2 + Bz^2)
 
     # Calculate E-Field
