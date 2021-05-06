@@ -12,17 +12,11 @@ function AxisymmetricEquilibrium(g::GEQDSKFile; clockwise_phi::Bool)
     return M
 end
 
-function Limiter(g::GEQDSKFile)
-    lim = Limiter()
-    for i =1:length(g.rlim)
-        push!(lim.vertices,(g.rlim[i],g.zlim[i]))
-    end
-    push!(lim.vertices, (g.rlim[1],g.zlim[1]))
-
-    return lim
+function Wall(g::GEQDSKFile)
+    return Wall(collect(zip(g.rlim,g.zlim)))
 end
 
 function read_geqdsk(gfile; kwargs...)
     g = readg(gfile)
-    return AxisymmetricEquilibrium(g; kwargs...), Limiter(g)
+    return AxisymmetricEquilibrium(g; kwargs...), Wall(g)
 end

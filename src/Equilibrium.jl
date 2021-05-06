@@ -7,6 +7,7 @@ using LinearAlgebra
 using Interpolations
 using ForwardDiff
 using StaticArrays
+using PolygonOps
 
 const mu0 = 4*pi*1e-7
 
@@ -18,8 +19,11 @@ include("equil.jl")
 export AxisymmetricEquilibrium
 export Bfield, Efield, Jfield, EMFields, fields, gradB, curlB
 
-include("limiter.jl")
-export Limiter, in_vessel
+include("wall.jl")
+export Wall, Wall2D, in_vessel
+
+include("boundary.jl")
+export PlasmaBoundary, in_plasma, circumference, area, area_average, volume, volume_average
 
 include("efit_io.jl")
 export read_geqdsk

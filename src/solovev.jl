@@ -22,6 +22,9 @@ In Solov'ev equilibrium p(x,y) = -Ψ₀^2 (1-A)ψ(x,y)/(μ₀R0^2) and F(x,y)^2 
 `xp` - x-point
 """
 struct SolovevEquilibrium
+    B0
+    Ip
+    Psi0
     A
     R0
     epsilon

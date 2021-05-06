@@ -8,15 +8,15 @@ using Equilibrium
 
 g = readg("g000001.01000")
 M = AxisymmetricEquilibrium(g)
-limiter = Limiter(g)
+wall = Wall(g)
 
 # or
-# M, limiter = read_geqdsk("g000001.01000")
+# M, wall = read_geqdsk("g000001.01000")
 
 Bfield(M, r, z)
 
 Jfield(M, r, z)
 
-in_vessel(limiter,r,z)
+in_vessel(wall,r,z)
 ```
 
