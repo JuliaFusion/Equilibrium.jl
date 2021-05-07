@@ -1,6 +1,6 @@
 mutable struct AxisymmetricEquilibrium{T<:Real, S<:AbstractRange{Float64},
                                R<:AbstractArray{Float64,2},
-                               Q<:AbstractArray{Float64,1}}
+                               Q<:AbstractArray{Float64,1}} <: AbstractEquilibrium
     cocos::COCOS       # COCOS
     r::S               # Radius/R range
     z::S               # Elevation/Z range
@@ -57,6 +57,10 @@ function Base.show(io::IO, M::AxisymmetricEquilibrium)
 end
 
 Base.broadcastable(M::AxisymmetricEquilibrium) = (M,)
+
+function limits(M::AxisymmetricEquilibrium)
+    return extrema(M.r), extrema(M.z)
+end
 
 struct EMFields{S<:Number,T<:AbstractVector}
     psi::S

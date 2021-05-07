@@ -224,7 +224,7 @@ Defines the equilibrium that satisfy Δ⋆ψ(x,y) = α + (1 - α)x^2 where r,z =
 `symmetric` - If true then equilibrium is up-down symmetric
 
 """
-struct SolovevEquilibrium
+struct SolovevEquilibrium <: AbstractEquilibrium
     cocos::COCOS
     B0
     R0
@@ -241,9 +241,9 @@ struct SolovevEquilibrium
     symmetric::Bool
 end
 
-function SolovevEquilibrium(B0, R0, ϵ, δ, κ, α, q⋆;
+function SolovevEquilibrium(B0, R0, ϵ, δ, κ, α, qstar;
                             diverted::Bool = false,
-                            xpoint::Union{NTuple{2,<:Real}} = diverted ? (R0*(1-1.1*δ*ϵ),-R0*1.1*κ*ϵ) : nothing,
+                            xpoint::Union{NTuple{2},Nothing} = (diverted ? (R0*(1-1.1*δ*ϵ),-R0*1.1*κ*ϵ) : nothing),
                             symmetric::Bool = (xpoint == nothing))
 
     if δ > sin(1)
@@ -280,15 +280,15 @@ function SolovevEquilibrium(B0, R0, ϵ, δ, κ, α, q⋆;
             Ψ_h[:,4] .= _solovev_polynomials_Dx(x, y)
             # Outer equatorial point curvature
             x, y = 1 + ϵ, 0
-            Ψ_p[5] = _solovev_psi_p_Dyy(x, y, α) + N₁*_solovev_p_Dx(x, y, α)
+            Ψ_p[5] = _solovev_psi_p_Dyy(x, y, α) + N₁*_solovev_psi_p_Dx(x, y, α)
             Ψ_h[:,5] .= _solovev_polynomials_Dyy(x, y) .+ N₁*_solovev_polynomials_Dx(x, y)
             # Inner equatorial point curvature
             x, y = 1 - ϵ, 0
-            Ψ_p[6] = _solovev_psi_p_Dyy(x, y, α) + N₂*_solovev_p_Dx(x, y, α)
+            Ψ_p[6] = _solovev_psi_p_Dyy(x, y, α) + N₂*_solovev_psi_p_Dx(x, y, α)
             Ψ_h[:,6] .= _solovev_polynomials_Dyy(x, y) .+ N₂*_solovev_polynomials_Dx(x, y)
             # High point curvature
             x, y = 1 - δ*ϵ, κ*ϵ
-            Ψ_p[7] = _solovev_psi_p_Dxx(x, y, α) + N₃*_solovev_p_Dy(x, y, α)
+            Ψ_p[7] = _solovev_psi_p_Dxx(x, y, α) + N₃*_solovev_psi_p_Dy(x, y, α)
             Ψ_h[:,7] .= _solovev_polynomials_Dxx(x, y) .+ N₃*_solovev_polynomials_Dy(x, y)
 
             c = Ψ_h[1:7,1:7]'\(-Ψ_p[1:7])
@@ -318,11 +318,11 @@ function SolovevEquilibrium(B0, R0, ϵ, δ, κ, α, q⋆;
             Ψ_h[:,5] .= _solovev_polynomials_Dy(x, y)
             # Outer equatorial point curvature
             x, y = 1 + ϵ, 0
-            Ψ_p[6] = _solovev_psi_p_Dyy(x, y, α) + N₁*_solovev_p_Dx(x, y, α)
+            Ψ_p[6] = _solovev_psi_p_Dyy(x, y, α) + N₁*_solovev_psi_p_Dx(x, y, α)
             Ψ_h[:,6] .= _solovev_polynomials_Dyy(x, y) .+ N₁*_solovev_polynomials_Dx(x, y)
             # Inner equatorial point curvature
             x, y = 1 - ϵ, 0
-            Ψ_p[7] = _solovev_psi_p_Dyy(x, y, α) + N₂*_solovev_p_Dx(x, y, α)
+            Ψ_p[7] = _solovev_psi_p_Dyy(x, y, α) + N₂*_solovev_psi_p_Dx(x, y, α)
             Ψ_h[:,7] .= _solovev_polynomials_Dyy(x, y) .+ N₂*_solovev_polynomials_Dx(x, y)
 
             c = Ψ_h[1:7,1:7]'\(-Ψ_p[1:7])
@@ -372,15 +372,15 @@ function SolovevEquilibrium(B0, R0, ϵ, δ, κ, α, q⋆;
         Ψ_h[:,9] .= _solovev_polynomials_Dy(x, y)
         # Outer equatorial point curvature
         x, y = 1 + ϵ, 0
-        Ψ_p[10] = _solovev_psi_p_Dyy(x, y, α) + N₁*_solovev_p_Dx(x, y, α)
+        Ψ_p[10] = _solovev_psi_p_Dyy(x, y, α) + N₁*_solovev_psi_p_Dx(x, y, α)
         Ψ_h[:,10] .= _solovev_polynomials_Dyy(x, y) .+ N₁*_solovev_polynomials_Dx(x, y)
         # Inner equatorial point curvature
         x, y = 1 - ϵ, 0
-        Ψ_p[11] = _solovev_psi_p_Dyy(x, y, α) + N₂*_solovev_p_Dx(x, y, α)
+        Ψ_p[11] = _solovev_psi_p_Dyy(x, y, α) + N₂*_solovev_psi_p_Dx(x, y, α)
         Ψ_h[:,11] .= _solovev_polynomials_Dyy(x, y) .+ N₂*_solovev_polynomials_Dx(x, y)
         # High point curvature
         x, y = 1 - δ*ϵ, κ*ϵ
-        Ψ_p[12] = _solovev_psi_p_Dxx(x, y, α) + N₃*_solovev_p_Dy(x, y, α)
+        Ψ_p[12] = _solovev_psi_p_Dxx(x, y, α) + N₃*_solovev_psi_p_Dy(x, y, α)
         Ψ_h[:,12] .= _solovev_polynomials_Dxx(x, y) .+ N₃*_solovev_polynomials_Dy(x, y)
 
         c = Ψ_h'\(-Ψ_p)
@@ -392,17 +392,19 @@ function SolovevEquilibrium(B0, R0, ϵ, δ, κ, α, q⋆;
     bdry = PlasmaBoundary(collect(zip(x,y)))
 
     #Eq. 6.158 in Ideal MHD
-    K₁ = area_average(bdry, (x,y) -> (α + (1-α)*x^2)/x)
-    K₂ = volume_average(bdry,(x,y) -> -_solovev_psi(x,y,α,c))/(2pi)
-    K₃ = volume(bdry)/(2pi)
+    V = volume(bdry)
+    K₁ = area_average(bdry, (x,y) -> (α + (1-α)*x^2)/x)*area(bdry)
+    K₂ = volume_average(bdry,(x,y) -> -_solovev_psi(x,y,α,c))*V/(2pi)
+    K₃ = V/(2pi)
 
-    #Eq. 6.157 in Ideal MHD
+    #Eq. 19 from paper (error in β_t in Ideal MHD (extra ^2))
+    Cp = circumference(bdry)
     a = ϵ*R0
-    ψ0 = 2pi*(a^2*B0)*(1 + κ^2)/(2*q⋆*K₁)
-    β_p = 8*pi^2*ϵ^2*(1-α)*((1 + κ^2)/2)*K₂/(K₁^2*K₃)
-    β_t = (8*pi^2*ϵ^4*(1-α)/(q⋆^2))*(((1+κ^2)/2)^2)*K₂/(K₁^2*K₃)
+    ψ0 = Cp*a*R0*B0/(qstar*K₁)
+    β_p = 2*(1-α)*Cp^2 * K₂/(K₁^2*K₃)
+    β_t = ϵ^2*β_p/(qstar^2)
 
-    return SolovevEquilibrium(cocos(3),B0,R0,ϵ,δ,κ,α,q⋆,ψ0,β_p,β_t,xpoint,c,symmetric)
+    return SolovevEquilibrium(cocos(5),B0,R0,ϵ,δ,κ,α,qstar,ψ0,β_p,β_t,xpoint,c,symmetric)
 end
 
 function (S::SolovevEquilibrium)(r,z)
@@ -421,7 +423,25 @@ function Base.show(io::IO, S::SolovevEquilibrium)
     print(io, "  α  = $(S.alpha)\n")
     print(io, "  q⋆ = $(S.qstar)\n")
     print(io, "  βp = $(S.beta_p)\n")
-    print(io, "  βt = $(S.beta_t)\n")
+    print(io, "  βt = $(S.beta_t)")
 end
 
 Base.broadcastable(S::SolovevEquilibrium) = (S,)
+
+function limits(S::SolovevEquilibrium)
+    xlims = (S.R0*(1-1.2*S.epsilon), S.R0*(1 + 1.2*S.epsilon))
+    ylims = (S.R0*(-1.2*S.epsilon*S.kappa), S.R0*(1.2*S.epsilon*S.kappa))
+    return xlims, ylims
+end
+
+function boundary(S::SolovevEquilibrium; n=100, kwargs...)
+    if S.xp == nothing
+        τ = range(0,2pi,length=n)
+        δ₀ = asin(S.delta)
+        x = S.R0*(1 .+ S.epsilon .* cos.(τ .+ δ₀*sin.(τ)))
+        y = S.R0*(S.epsilon*S.kappa*sin.(τ))
+        return PlasmaBoundary(collect(zip(x,y)))
+    else
+        return boundary(S,0.0; kwargs...)
+    end
+end

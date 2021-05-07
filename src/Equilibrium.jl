@@ -8,24 +8,28 @@ using Interpolations
 using ForwardDiff
 using StaticArrays
 using PolygonOps
+using Contour
 
 const mu0 = 4*pi*1e-7
+
+abstract type AbstractEquilibrium end
+(M::AbstractEquilibrium)(x,y) = error("Equilibrium `M` has not implemented M(r,z) = ψ functionality")
+
+export AbstractEquilibrium
 
 include("cocos.jl")
 export COCOS, cocos, check_cocos, identify_cocos, transform_cocos
 export cylindrical_cocos, poloidal_cocos, cylindrical_cocos_indices, poloidal_cocos_indices
 
-include("wall.jl")
-export Wall, Wall2D, in_vessel
-
-include("boundary.jl")
-export PlasmaBoundary, in_plasma, circumference, area, area_average, volume, volume_average
+include("polygon.jl")
+export Polygon, PlasmaBoundary, Wall, in_plasma, in_vessel
+export boundary, circumference, area, area_average, volume, volume_average
 
 include("solovev.jl")
-export SolovevEquilibrium
+export SolovevEquilibrium, boundary, limits
 
 include("equil.jl")
-export AxisymmetricEquilibrium
+export AxisymmetricEquilibrium, limits
 export Bfield, Efield, Jfield, EMFields, fields, gradB, curlB
 
 include("efit_io.jl")
