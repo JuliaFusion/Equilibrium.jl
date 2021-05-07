@@ -48,6 +48,10 @@ function AxisymmetricEquilibrium(cc::COCOS, r::AbstractRange{T}, z::AbstractRang
     AxisymmetricEquilibrium(cc, r, z, psi, psi_rz_itp, g_itp, p_itp, q_itp, phi_itp, b_itp, j_itp, axis, sigma)
 end
 
+function (M::AxisymmetricEquilibrium)(r,z)
+    return M.psi(r,z)
+end
+
 function Base.show(io::IO, M::AxisymmetricEquilibrium)
     print(io, "AxisymmetricEquilibrium{$(eltype(M.psi))}")
 end

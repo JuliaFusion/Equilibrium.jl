@@ -15,15 +15,18 @@ include("cocos.jl")
 export COCOS, cocos, check_cocos, identify_cocos, transform_cocos
 export cylindrical_cocos, poloidal_cocos, cylindrical_cocos_indices, poloidal_cocos_indices
 
-include("equil.jl")
-export AxisymmetricEquilibrium
-export Bfield, Efield, Jfield, EMFields, fields, gradB, curlB
-
 include("wall.jl")
 export Wall, Wall2D, in_vessel
 
 include("boundary.jl")
 export PlasmaBoundary, in_plasma, circumference, area, area_average, volume, volume_average
+
+include("solovev.jl")
+export SolovevEquilibrium
+
+include("equil.jl")
+export AxisymmetricEquilibrium
+export Bfield, Efield, Jfield, EMFields, fields, gradB, curlB
 
 include("efit_io.jl")
 export read_geqdsk
