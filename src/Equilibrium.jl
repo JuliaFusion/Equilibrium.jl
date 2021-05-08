@@ -47,7 +47,7 @@ include("solovev.jl")
 export SolovevEquilibrium, boundary, limits
 
 include("fields.jl")
-export Bfield, Efield, Jfield, EMFields, fields, gradB, curlB, poloidal_Bfield
+export Bfield, Efield, Jfield, EMFields, fields, gradB, curlB, poloidal_Bfield, poloidal_Jfield
 
 include("numerical.jl")
 export NumericalEquilibrium

@@ -65,9 +65,10 @@ function poloidal_Bfield(M::T, r, z) where T<:AbstractEquilibrium
     cc = cocos(M)
     B = Bfield(M, r, z)
 
+    ir, iphi, iz = cocos_cylindrical_indices(cc)
     sign_theta = cc.sigma_RpZ*cc.sigma_rhotp # + CW, - CCW
-    sign_Bp    = sign_theta*sign((z-zmaxis)*B[1] - (r-rmaxis)*B[3]) # sign(theta)*sign(r x B)
-    Bpol = sign_Bp*sqrt(B[1]^2 + B[3]^2)
+    sign_Bp    = sign_theta*sign((z-zmaxis)*B[ir] - (r-rmaxis)*B[iz]) # sign(theta)*sign(r x B)
+    Bpol = sign_Bp*sqrt(B[ir]^2 + B[iz]^2)
     return Bpol
 end
 
@@ -102,6 +103,18 @@ function Jfield(M::T, x, y, z; kwargs...) where T<:AbstractEquilibrium
     sp, cp = sincos(phi)
     J_xyz = SVector{3}(J[1]*cp - J[2]*sp, J[1]*sp + J[2]*cp, J[3])
     return J_xyz
+end
+
+function poloidal_Jfield(M::T, r, z) where T<:AbstractEquilibrium
+    rmaxis, zmaxis = magnetic_axis(M)
+    cc = cocos(M)
+    B = Jfield(M, r, z)
+
+    ir, iphi, iz = cocos_cylindrical_indices(cc)
+    sign_theta = cc.sigma_RpZ*cc.sigma_rhotp # + CW, - CCW
+    sign_Jp    = sign_theta*sign((z-zmaxis)*J[ir] - (r-rmaxis)*J[iz]) # sign(theta)*sign(r x B)
+    Jpol = sign_Jp*sqrt(J[ir]^2 + J[iz]^2)
+    return Jpol
 end
 
 function Efield(M::T, r, z) where T<:AbstractEquilibrium
