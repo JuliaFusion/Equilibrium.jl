@@ -7,7 +7,7 @@ using EFIT
 using Equilibrium
 
 g = readg("g000001.01000")
-M = AxisymmetricEquilibrium(g)
+M = NumericalEquilibrium(g)
 wall = Wall(g)
 
 # or

@@ -47,7 +47,6 @@ function Bfield(M::T, r, z) where T<:AbstractEquilibrium
     Bt = gval/r
 
     B = SVector{3}(cylindrical_cocos(cc, BR, Bt, Bz))
-    B = Bfield(M.psi_rz, M.g, r, z, M.cocos)
     return B
 end
 
@@ -65,7 +64,7 @@ function poloidal_Bfield(M::T, r, z) where T<:AbstractEquilibrium
     cc = cocos(M)
     B = Bfield(M, r, z)
 
-    ir, iphi, iz = cocos_cylindrical_indices(cc)
+    ir, iphi, iz = cylindrical_cocos_indices(cc)
     sign_theta = cc.sigma_RpZ*cc.sigma_rhotp # + CW, - CCW
     sign_Bp    = sign_theta*sign((z-zmaxis)*B[ir] - (r-rmaxis)*B[iz]) # sign(theta)*sign(r x B)
     Bpol = sign_Bp*sqrt(B[ir]^2 + B[iz]^2)
@@ -110,7 +109,7 @@ function poloidal_Jfield(M::T, r, z) where T<:AbstractEquilibrium
     cc = cocos(M)
     B = Jfield(M, r, z)
 
-    ir, iphi, iz = cocos_cylindrical_indices(cc)
+    ir, iphi, iz = cylindrical_cocos_indices(cc)
     sign_theta = cc.sigma_RpZ*cc.sigma_rhotp # + CW, - CCW
     sign_Jp    = sign_theta*sign((z-zmaxis)*J[ir] - (r-rmaxis)*J[iz]) # sign(theta)*sign(r x B)
     Jpol = sign_Jp*sqrt(J[ir]^2 + J[iz]^2)
@@ -119,13 +118,19 @@ end
 
 function Efield(M::T, r, z) where T<:AbstractEquilibrium
 
-    Bpol = poloidal_Bfield(M, r, z)
-
     psi = M(r,z)
+    phi_grad = phi_gradient(M, psi)
+    if phi_grad == 0
+        return SVector{3}(zero(r),zero(r),zero(r))
+    end
+
+    Bpol = poloidal_Bfield(M, r, z) #signed
+
     grad_psi = psi_gradient(M,r,z)
     grad_psi = grad_psi/norm(grad_psi)
 
-    Er = -r*Bpol*phi_gradient(M, psi)
+    # is Bpol signed in this equation?
+    Er = -r*Bpol*phi_grad
 
     ER = Er*grad_psi[1] # Er*dpsi/dR = (-dphi/dpsi)*(dpsi/dR)
     Ez = Er*grad_psi[2] # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
@@ -197,8 +202,8 @@ end
 
 function safety_factor(M::AbstractEquilibrium, psi)
     g = poloidal_current(M,psi)
-    fs = boundary(M,psi,n=100)
-    q = (g/(2pi))*average(fs,x->poloidal_Bfield(M,x[1],x[2])/x[1]^2)*circumference(fs)
+    fs = boundary(M, psi)
+    q = (g/(2pi))*average(fs,(x,y)->inv(poloidal_Bfield(M,x,y)*x^2))*circumference(fs)
     return q
 end
 

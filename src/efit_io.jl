@@ -1,14 +1,15 @@
 using EFIT
 
-function AxisymmetricEquilibrium(g::GEQDSKFile, cc::Union{Int,COCOS})
-    M = AxisymmetricEquilibrium(cocos(cc), g.r, g.z, g.psi, g.psirz, g.fpol, g.pres,
-                                g.qpsi, g.fpol*0, (g.rmaxis,g.zmaxis));
+function NumericalEquilibrium(g::GEQDSKFile, cc::Union{Int,COCOS})
+    M = NumericalEquilibrium(cocos(cc), g.r, g.z, g.psi, g.psirz, g.fpol, g.pres,
+                             g.qpsi, g.fpol*0, (g.rmaxis,g.zmaxis),
+                             Int(sign(g.bcentr)*sign(g.current)));
     return M
 end
 
-function AxisymmetricEquilibrium(g::GEQDSKFile; clockwise_phi::Bool)
+function NumericalEquilibrium(g::GEQDSKFile; clockwise_phi::Bool)
     cc = cocos(g,clockwise_phi=clockwise_phi)
-    M = AxisymmetricEquilibrium(g, cc)
+    M = NumericalEquilibrium(g, cc)
     return M
 end
 
@@ -18,5 +19,5 @@ end
 
 function read_geqdsk(gfile; kwargs...)
     g = readg(gfile)
-    return AxisymmetricEquilibrium(g; kwargs...), Wall(g)
+    return NumericalEquilibrium(g; kwargs...), Wall(g)
 end

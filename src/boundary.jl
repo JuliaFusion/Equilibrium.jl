@@ -38,7 +38,7 @@ function Base.getproperty(b::Boundary,s::Symbol)
     error("type $(typeof(b)) has no field $s")
 end
 
-in_boundary(b::Boundary, p) = inpolygon(p,b.points,in=true,on=true,out=false)
+in_boundary(b::Boundary, p) = PolygonOps.inpolygon(p,b.points,in=true,on=true,out=false)
 in_boundary(b::Boundary,x,y) = in_boundary(b,(x,y))
 
 const in_vessel = in_boundary
@@ -49,9 +49,9 @@ function boundary(M::AbstractEquilibrium, psi, dx=0.01,dy=0.01)
     x = range(xlims...,step=dx)
     y = range(ylims...,step=dy)
     Psi = [M(xx,yy) for xx in x, yy in y]
-    cl = contour(x,y,Psi,psi)
-    l = lines(cl)[1]
-    xc, yc = coordinates(l)
+    cl = Contour.contour(x,y,Psi,psi)
+    l = Contour.lines(cl)[1]
+    xc, yc = Contour.coordinates(l)
     return Boundary(xc,yc)
 end
 

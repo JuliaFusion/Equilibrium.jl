@@ -169,6 +169,55 @@ function cocos(cocos_in)
 end
 
 """
+    check_cocos(sigma_B0, sigma_Ip, sigma_F, sigma_pprime, sigma_q, sigma_dpsi, cc::COCOS; verbose = false) -> Bool
+
+Returns True if equilibrium quantities are consistant with given COCOS
+
+`sigma_B0` - Toroidal magnetic field sign
+
+`sigma_Ip` - Plasma current sign
+
+`sigma_F` - Poloidal current sign
+
+`sigma_pprime` - Pressure gradient sign
+
+`sigma_dpsi` - dpsi/dr sign
+
+`cc::Union{Int,COCOS}` - COCOS structure or ID
+"""
+function check_cocos(sigma_B0, sigma_Ip, sigma_F, sigma_pprime,
+                     sigma_q, sigma_dpsi,
+                     cc::Union{Int,COCOS}; verbose=false)
+
+    cc = cocos(cc)
+
+    valid = true
+    if sigma_q*cc.sigma_rhotp*sigma_Ip*sigma_B0 < 0
+        verbose && @warn "sigma_q($sigma_q) ≠ sigma_rhotp($(cc.sigma_rhotp))*sigma_Ip($sigma_Ip)*sigma_B0($sigma_B0)"
+        valid = false
+    end
+
+    if sigma_F*sigma_B0 < 0
+        verbose && @warn "Signs of F and B0 are not consistant"
+        valid = false
+    end
+
+    if sigma_dpsi*cc.sigma_Bp*sigma_Ip < 0
+        if sigma_dpsi > 0
+            verbose && @warn "psi should be decreasing with sign(Ip) = $(sigma_Ip) for COCOS = $(cc.cocos)"
+        else
+            verbose && @warn "psi should be increasing with sign(Ip) = $(sigma_Ip) for COCOS = $(cc.cocos)"
+        end
+        valid = false
+    elseif sigma_pprime*sigma_Ip*cc.sigma_Bp > 0
+        verbose && @warn "sign(pprime) should be $(-sigma_Ip*cc.sigma_Bp)"
+        valid = false
+    end
+
+    return valid
+end
+
+"""
     check_cocos(B0, Ip, F::AbstractVector, pprime::AbstractVector, q::AbstractVector, psi::AbstracVector, cc::COCOS; verbose = false) -> Bool
 
 Returns True if equilibrium quantities are consistant with given COCOS
@@ -187,35 +236,17 @@ Returns True if equilibrium quantities are consistant with given COCOS
 """
 function check_cocos(B0, Ip, F::AbstractVector, pprime::AbstractVector,
                      q::AbstractVector, psi::AbstractVector,
-                     cc::Union{Int,COCOS}; verbose=false)
+                     cc::Union{Int,COCOS}; kwargs...)
 
-    cc = cocos(cc)
+    sigma_B0 = sign(B0)
+    sigma_Ip = sign(Ip)
+    sigma_F = sign(sum(F))
+    sigma_pprime = sign(sum(pprime))
+    sigma_q = sign(q[end])
+    sigma_dpsi = sign(psi[end] - psi[1])
 
-    valid = true
-    qsign = sign(q[end])
-    if qsign*cc.sigma_rhotp*sign(Ip)*sign(B0) < 0
-        verbose && @warn "sign(q[end]) ≠ sigma_rhotp*sign(Ip)*sign(B0)"
-        valid = false
-    end
+    return check_cocos(sigma_B0, sigma_Ip, sigma_F, sigma_pprime, sigma_q, sigma_dpsi, cc; kwargs...)
 
-    if all(sign.(F)*sign(B0) .< 0)
-        verbose && @warn "Signs of F and B0 are not consistant"
-        valid = false
-    end
-
-    if sign(psi[end] - psi[1])*cc.sigma_Bp*sign(Ip) < 0
-        if psi[end] > psi[1]
-            verbose && @warn "psi should be decreasing with sign(Ip) = $(sign(Ip)) for COCOS = $(cc.cocos)"
-        else
-            verbose && @warn "psi should be increasing with sign(Ip) = $(sign(Ip)) for COCOS = $(cc.cocos)"
-        end
-        valid = false
-    elseif sign(sum(pprime))*sign(Ip)*cc.sigma_Bp > 0
-        verbose && @warn "sign(pprime) should be $(-sign(Ip)*cc.sigma_Bp)"
-        valid = false
-    end
-
-    return valid
 end
 
 """
@@ -304,7 +335,7 @@ Utility function to identify COCOS coordinate system. If multiple COCOS are poss
 
 `clockwise_phi::Bool` - (optional) [True, False] if phi angle is defined clockwise or not. This is required to identify odd Vs even COCOS. Note that this cannot be determined from the output of a code.
 """
-function identify_cocos(sigma_B0::Int, sigma_Ip::Int, sigma_q::Int, sigma_dpsi::Int,
+function identify_cocos(sigma_B0, sigma_Ip, sigma_q, sigma_dpsi,
                         clockwise_phi::Union{Bool,Nothing} = nothing)
 
     if clockwise_phi == nothing

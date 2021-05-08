@@ -399,9 +399,9 @@ function SolovevEquilibrium(B0, R0, ϵ, δ, κ, α, qstar;
     bdry = PlasmaBoundary(collect(zip(x,y)))
 
     #Eq. 6.158 in Ideal MHD
-    V = volume(bdry)
-    K₁ = area_average(bdry, (x,y) -> (α + (1-α)*x^2)/x)*area(bdry)
-    K₂ = volume_average(bdry,(x,y) -> -_solovev_psi(x,y,α,c))*V/(2pi)
+    V = volume(bdry,dx=0.005,dy=0.005)
+    K₁ = area_average(bdry, (x,y) -> (α + (1-α)*x^2)/x,dx=0.005,dy=0.005)*area(bdry)
+    K₂ = volume_average(bdry,(x,y) -> -_solovev_psi(x,y,α,c),dx=0.005,dy=0.005)*V/(2pi)
     K₃ = V/(2pi)
 
     #Eq. 19 from paper (error in β_t in Ideal MHD (extra ^2))
@@ -467,7 +467,7 @@ end
 
 function psi_gradient(S::SolovevEquilibrium,r,z)
     x, y = r/S.R0, z/S.R0
-    return SVector{2}(_solovev_psi_Dx(x,y,S.alpha,S.c), _solovev_psi_Dy(x,y,S.alpha,S.c))/S.R0
+    return S.psi0*SVector{2}(_solovev_psi_Dx(x,y,S.alpha,S.c), _solovev_psi_Dy(x,y,S.alpha,S.c))/S.R0
 end
 
 _solovev_magnetic_axis = Dict{SolovevEquilibrium,NTuple{2}}()
@@ -476,7 +476,7 @@ function magnetic_axis(S::SolovevEquilibrium)
         return _solovev_magnetic_axis[S]
     else
         sigma_psi = sign(S(S.R0,0))
-        res = optimize(x->-sigma_psi*S(x[1],x[2]), x -> psi_gradient(S,x[1],x[2]), [S.R0, zero(S.R0)], inplace=false)
+        res = Optim.optimize(x->-sigma_psi*S(x[1],x[2]), x -> psi_gradient(S,x[1],x[2]), [S.R0, zero(S.R0)], inplace=false)
         axis = (res.minimizer[1],res.minimizer[2])
         _solovev_magnetic_axis[S] = axis
     end
@@ -505,7 +505,7 @@ function poloidal_current(S::SolovevEquilibrium,psi)
     A = S.psi0*S.alpha/(S.R0^2)
     dF2dpsi = -2*A
     F2 = dF2dpsi*psi + S.R0^2*S.B0^2
-    return S.sign_B0*sqrt(F2)
+    return S.sigma_B0*sqrt(F2)
 end
 
 function poloidal_current_gradient(S::SolovevEquilibrium,psi)

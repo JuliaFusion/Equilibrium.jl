@@ -7,9 +7,10 @@ using LinearAlgebra
 using Interpolations
 using ForwardDiff
 using StaticArrays
-using PolygonOps
-using Contour
-using Optim
+
+import PolygonOps
+import Contour
+import Optim
 
 const mu0 = 4*pi*1e-7
 
