@@ -195,9 +195,12 @@ end
 """
 SolovevEquilibrium Structure
 
-Defines the equilibrium that satisfy Δ⋆ψ(x,y) = α + (1 - α)x^2 where r,z = R0*(x,y)
+Defines the equilibrium that satisfy Δ⋆ψ(x,y) = α + (1 - α)x^2 where r,z = R0*(x,y).
+F(dF/dψ) = -A, μ₀dp/dψ = -C, α = A/(A + C*R0²), ψ₀ = R0²(A + C*R0²)
 
 `cocos` - COCOS
+
+`B0` - Toroidal magnetic field magnitude on axis [T]
 
 `R0` - Major Radius [m]
 
@@ -207,22 +210,23 @@ Defines the equilibrium that satisfy Δ⋆ψ(x,y) = α + (1 - α)x^2 where r,z =
 
 `kappa` - elongation/ellipticity
 
-`alpha` - constant relating beta regime
+`alpha` - constant relating beta regime (α)
 
 `qstar` - Kink safety factor
 
-`psi0` - Poloidal flux normalization
+`psi0` - Poloidal flux normalization (ψ₀)
 
 `beta_p` - Poloidal beta
 
 `beta_t` - Toroidal beta
 
-`xp` - x-point
-
 `c` - Coefficients for Solov'ev polynomials
+
+`diverted` - If true then equilibrium has one or more x-points
 
 `symmetric` - If true then equilibrium is up-down symmetric
 
+`sigma` - Sign of dot(B,J)
 """
 struct SolovevEquilibrium <: AbstractEquilibrium
     cocos::COCOS
@@ -236,12 +240,15 @@ struct SolovevEquilibrium <: AbstractEquilibrium
     psi0
     beta_p
     beta_t
-    xp::Union{NTuple{2},Nothing}
     c::AbstractVector
+    diverted::Bool
     symmetric::Bool
+    sigma_B0::Int
+    sigma_Ip::Int
 end
 
 function SolovevEquilibrium(B0, R0, ϵ, δ, κ, α, qstar;
+                            B0_dir = 1, Ip_dir = 1,
                             diverted::Bool = false,
                             xpoint::Union{NTuple{2},Nothing} = (diverted ? (R0*(1-1.1*δ*ϵ),-R0*1.1*κ*ϵ) : nothing),
                             symmetric::Bool = (xpoint == nothing))
@@ -252,9 +259,9 @@ function SolovevEquilibrium(B0, R0, ϵ, δ, κ, α, qstar;
 
     #Eq. 11
     δ₀ = asin(δ)
-    N₁ = -(1 + δ₀)^2/(ϵ*κ^2)
-    N₂ =  (1 - δ₀)^2/(ϵ*κ^2)
-    N₃ = -κ/(ϵ*cos(δ₀)^2)
+    N₁ = -(1 + δ₀)^2/(ϵ*κ^2) # [d²x/dy²]_(τ=0)
+    N₂ =  (1 - δ₀)^2/(ϵ*κ^2) # [d²x/dy²]_(τ=pi)
+    N₃ = -κ/(ϵ*cos(δ₀)^2)    # [d²y/dx²]_(τ=pi/2)
 
     Ψ_h = zeros(12,12)
     Ψ_p = zeros(12)
@@ -400,11 +407,12 @@ function SolovevEquilibrium(B0, R0, ϵ, δ, κ, α, qstar;
     #Eq. 19 from paper (error in β_t in Ideal MHD (extra ^2))
     Cp = circumference(bdry)
     a = ϵ*R0
-    ψ0 = Cp*a*R0*B0/(qstar*K₁)
+    ψ0 = -Cp*a*R0*B0/(qstar*K₁*Ip_dir)
     β_p = 2*(1-α)*Cp^2 * K₂/(K₁^2*K₃)
     β_t = ϵ^2*β_p/(qstar^2)
 
-    return SolovevEquilibrium(cocos(5),B0,R0,ϵ,δ,κ,α,qstar,ψ0,β_p,β_t,xpoint,c,symmetric)
+    cc = 3
+    return SolovevEquilibrium(cocos(cc),promote(B0,R0,ϵ,δ,κ,α,qstar,ψ0,β_p,β_t)..., c, diverted, symmetric, B0_dir, Ip_dir)
 end
 
 function (S::SolovevEquilibrium)(r,z)
@@ -415,7 +423,7 @@ end
 
 function Base.show(io::IO, S::SolovevEquilibrium)
     print(io, "SolovevEquilibrium\n")
-    print(io, "  B0 = $(S.B0) [T]\n")
+    print(io, "  B0 = $(S.sigma_B0*S.B0) [T]\n")
     print(io, "  R0 = $(S.R0) [m]\n")
     print(io, "  ϵ  = $(S.epsilon)\n")
     print(io, "  δ  = $(S.delta)\n")
@@ -423,10 +431,21 @@ function Base.show(io::IO, S::SolovevEquilibrium)
     print(io, "  α  = $(S.alpha)\n")
     print(io, "  q⋆ = $(S.qstar)\n")
     print(io, "  βp = $(S.beta_p)\n")
-    print(io, "  βt = $(S.beta_t)")
+    print(io, "  βt = $(S.beta_t)\n")
+    print(io, "  σ  = $(S.sigma_B0*S.sigma_Ip)\n")
+    print(io, "  diverted  = $(S.diverted)\n")
+    print(io, "  symmetric = $(S.symmetric)")
 end
 
 Base.broadcastable(S::SolovevEquilibrium) = (S,)
+
+function cocos(S::SolovevEquilibrium)
+    return S.cocos
+end
+
+function B0Ip_sign(S::SolovevEquilibrium)
+    return S.sigma_B0*S.sigma_Ip
+end
 
 function limits(S::SolovevEquilibrium)
     xlims = (S.R0*(1-1.2*S.epsilon), S.R0*(1 + 1.2*S.epsilon))
@@ -435,13 +454,63 @@ function limits(S::SolovevEquilibrium)
 end
 
 function boundary(S::SolovevEquilibrium; n=100, kwargs...)
-    if S.xp == nothing
+    if S.diverted
+        return boundary(S,0.0; kwargs...)
+    else
         τ = range(0,2pi,length=n)
         δ₀ = asin(S.delta)
         x = S.R0*(1 .+ S.epsilon .* cos.(τ .+ δ₀*sin.(τ)))
         y = S.R0*(S.epsilon*S.kappa*sin.(τ))
         return PlasmaBoundary(collect(zip(x,y)))
-    else
-        return boundary(S,0.0; kwargs...)
     end
 end
+
+function psi_gradient(S::SolovevEquilibrium,r,z)
+    x, y = r/S.R0, z/S.R0
+    return SVector{2}(_solovev_psi_Dx(x,y,S.alpha,S.c), _solovev_psi_Dy(x,y,S.alpha,S.c))/S.R0
+end
+
+_solovev_magnetic_axis = Dict{SolovevEquilibrium,NTuple{2}}()
+function magnetic_axis(S::SolovevEquilibrium)
+    if S in keys(_solovev_magnetic_axis)
+        return _solovev_magnetic_axis[S]
+    else
+        sigma_psi = sign(S(S.R0,0))
+        res = optimize(x->-sigma_psi*S(x[1],x[2]), x -> psi_gradient(S,x[1],x[2]), [S.R0, zero(S.R0)], inplace=false)
+        axis = (res.minimizer[1],res.minimizer[2])
+        _solovev_magnetic_axis[S] = axis
+    end
+    return axis
+end
+
+function psi_limits(S::SolovevEquilibrium)
+    psimag = S(magnetic_axis(S)...)
+    psibry = zero(psimag)
+    return (psimag, psibry)
+end
+
+function pressure_gradient(S::SolovevEquilibrium,psi)
+    C = S.psi0*(1-S.alpha)/(S.R0^4)
+    return -C/mu0
+end
+
+function pressure(S::SolovevEquilibrium, psi; p0=zero(psi))
+    C = S.psi0*(1-S.alpha)/(S.R0^4)
+    dpdpsi = -C/mu0
+    p = dpdpsi*psi + p0
+    return p
+end
+
+function poloidal_current(S::SolovevEquilibrium,psi)
+    A = S.psi0*S.alpha/(S.R0^2)
+    dF2dpsi = -2*A
+    F2 = dF2dpsi*psi + S.R0^2*S.B0^2
+    return S.sign_B0*sqrt(F2)
+end
+
+function poloidal_current_gradient(S::SolovevEquilibrium,psi)
+    A = S.psi0*S.alpha/(S.R0^2)
+    return -A/poloidal_current(S,psi)
+end
+
+phi_gradient(S::SolovevEquilibrium,psi) = zero(psi)

@@ -290,32 +290,26 @@ function transform_cocos(cc_in::Union{Int,COCOS}, cc_out::Union{Int,COCOS}; kwar
 end
 
 """
-    identify_cocos(B0, Ip, q, psi, clockwise_phi, a) -> List of possible COCOS IDs
+    identify_cocos(sigma_B0, sigma_Ip, sigma_q, sigma_dpsi, clockwise_phi) -> List of possible COCOS IDs
 
 Utility function to identify COCOS coordinate system. If multiple COCOS are possible, then all are returned.
 
-`B0` - toroidal magnetic field (with sign)
+`sigma_B0` - (+1,-1) sign of the toroidal magnetic field
 
-`Ip` - plasma current (with sign)
+`sigma_Ip` - (+1,-1) sign of toroidal plasma current
 
-`q`  -  safety factor profile (with sign) as function of psi
+`sigma_q`  - (+1,-1) sign of the safety factor (q) within the plasma
 
-`psi::AbstractVector` -  poloidal flux as function of psi(with sign)
+`sigma_dpsi` -  +1 if psi is increasing, -1 if psi is decreasing
 
 `clockwise_phi::Bool` - (optional) [True, False] if phi angle is defined clockwise or not. This is required to identify odd Vs even COCOS. Note that this cannot be determined from the output of a code.
-
-`a::AbstractVector` - (optional) flux surfaces minor radius as function of psi
-          This is required to identify 2*pi term in psi definition
 """
-function identify_cocos(B0, Ip, q::AbstractVector, psi::AbstractVector,
-                        clockwise_phi::Union{Bool,Nothing} = nothing,
-                        a::Union{AbstractVector,Nothing} = nothing)
+function identify_cocos(sigma_B0::Int, sigma_Ip::Int, sigma_q::Int, sigma_dpsi::Int,
+                        clockwise_phi::Union{Bool,Nothing} = nothing)
 
     if clockwise_phi == nothing
         sigma_rpz = clockwise_phi
     elseif clockwise_phi
-        #TODO: https://github.com/gafusion/omas/issues/160
-        #Assuming bug is real
         sigma_rpz = -1
     else
         sigma_rpz = +1
@@ -323,18 +317,13 @@ function identify_cocos(B0, Ip, q::AbstractVector, psi::AbstractVector,
 
     # return both even and odd COCOS if clockwise_phi is not provided
     if sigma_rpz == nothing
-        tmp  = identify_cocos(B0, Ip, q, psi, true, a)
-        tmp2 = identify_cocos(B0, Ip, q, psi, false, a)
+        tmp  = identify_cocos(sigma_B0, sigma_Ip, sigma_q, sigma_dpsi, true)
+        tmp2  = identify_cocos(sigma_B0, sigma_Ip, sigma_q, sigma_dpsi, false)
         return (tmp..., tmp2...)
     end
 
-    sigma_Ip = sign(Ip)
-    sigma_B0 = sign(B0)
-    sign_dpsi_pos = sign(psi[2]-psi[1])
-    sign_q_pos = sign(q[1])
-
-    sigma_Bp = sign_dpsi_pos / sigma_Ip
-    sigma_rhotp = sign_q_pos / (sigma_Ip * sigma_B0)
+    sigma_Bp = sigma_dpsi / sigma_Ip
+    sigma_rhotp = sigma_q / (sigma_Ip * sigma_B0)
 
     sigma2cocos = Dict(
         (+1, +1, +1) => 1,  # +Bp, +rpz, +rtp
@@ -345,6 +334,38 @@ function identify_cocos(B0, Ip, q::AbstractVector, psi::AbstractVector,
         (+1, -1, -1) => 6,  # +Bp, -rpz, -rtp
         (-1, +1, +1) => 7,  # -Bp, +rpz, +rtp
         (-1, -1, +1) => 8)  # -Bp, -rpz, +rtp
+
+    return (sigma2cocos[(sigma_Bp, sigma_rpz, sigma_rhotp)], sigma2cocos[(sigma_Bp, sigma_rpz, sigma_rhotp)] + 10)
+end
+
+"""
+    identify_cocos(B0, Ip, q, psi, clockwise_phi, a) -> List of possible COCOS IDs
+
+Utility function to identify COCOS coordinate system. If multiple COCOS are possible, then all are returned.
+
+`B0` - toroidal magnetic field (with sign)
+
+`Ip` - plasma current (with sign)
+
+`q`  -  safety factor profile (with sign) as function of psi
+
+`psi::AbstractVector` -  Vector of poloidal fluxs from the magnetic axis to the plasma boundary
+
+`clockwise_phi::Bool` - (optional) [True, False] if phi angle is defined clockwise or not. This is required to identify odd Vs even COCOS. Note that this cannot be determined from the output of a code.
+
+`a::AbstractVector` - (optional) flux surfaces minor radius as function of psi
+          This is required to identify 2*pi term in psi definition
+"""
+function identify_cocos(B0, Ip, q::AbstractVector, psi::AbstractVector,
+                        clockwise_phi::Union{Bool,Nothing} = nothing,
+                        a::Union{AbstractVector,Nothing} = nothing)
+
+    sigma_B0 = sign(B0)
+    sigma_Ip = sign(Ip)
+    sigma_q = sign(q[1])
+    sigma_dpsi = sign(psi[2]-psi[1])
+
+    ccs = identify_cocos(sigma_B0, sigma_Ip, sigma_q, sigma_dpsi, clockwise_phi)
 
     # identify 2*pi term in psi definition based on q estimate
     if a != nothing
@@ -361,10 +382,10 @@ function identify_cocos(B0, Ip, q::AbstractVector, psi::AbstractVector,
             eBp = 0
         end
 
-        return (sigma2cocos[(sigma_Bp, sigma_rpz, sigma_rhotp)] + 10 * eBp, )
+        return filter(x -> x > 10*eBp, ccs)
     else
         # return COCOS<10 as well as COCOS>10 if a is not provided
-        return (sigma2cocos[(sigma_Bp, sigma_rpz, sigma_rhotp)], sigma2cocos[(sigma_Bp, sigma_rpz, sigma_rhotp)] + 10)
+        return ccs
     end
 end
 
