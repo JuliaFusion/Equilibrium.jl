@@ -24,7 +24,8 @@ magnetic_axis(M::AbstractEquilibrium,r,z) = _not_implemented(M)
 limits(M::AbstractEquilibrium) = _not_implemented(M)
 psi_limits(M::AbstractEquilibrium) = _not_implemented(M)
 psi_gradient(M::AbstractEquilibrium) = _not_implemented(M)
-phi_gradient(M::AbstractEquilibrium) = _not_implemented(M)
+electric_potential(M::AbstractEquilibrium, psi) = _not_implemented(M)
+electric_potential_gradient(M::AbstractEquilibrium) = _not_implemented(M)
 pressure(M::AbstractEquilibrium, psi) = _not_implemented(M)
 poloidal_current(M::AbstractEquilibrium, psi) = _not_implemented(M)
 pressure_gradient(M::AbstractEquilibrium, psi) = _not_implemented(M)
@@ -33,7 +34,7 @@ cocos(M::AbstractEquilibrium) = _not_implemented(M)
 B0Ip_sign(M::AbstractEquilibrium) = _not_implemented(M)
 
 # Equilibrium API
-export magnetic_axis, limits, psi_limits, psi_gradient, phi_gradient
+export magnetic_axis, limits, psi_limits, psi_gradient, electric_potential, electric_potential_gradient
 export pressure, poloidal_current, pressure_gradient, poloidal_current_gradient, safety_factor, cocos, B0Ip_sign
 
 include("cocos.jl")

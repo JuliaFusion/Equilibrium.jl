@@ -513,4 +513,5 @@ function poloidal_current_gradient(S::SolovevEquilibrium,psi)
     return -A/poloidal_current(S,psi)
 end
 
-phi_gradient(S::SolovevEquilibrium,psi) = zero(psi)
+electric_potential(S::SolovevEquilibrium,psi) = zero(psi)
+electric_potential_gradient(S::SolovevEquilibrium,psi) = zero(psi)

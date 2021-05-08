@@ -86,6 +86,10 @@ function safety_factor(N::NumericalEquilibrium, psi)
     return N.q(psi)
 end
 
-function phi_gradient(N::NumericalEquilibrium, psi)
+function electric_potential(N::NumericalEquilibrium, psi)
+    return N.phi(psi)
+end
+
+function electric_potential_gradient(N::NumericalEquilibrium, psi)
     return Interpolations.gradient(N.phi, psi)[1]
 end

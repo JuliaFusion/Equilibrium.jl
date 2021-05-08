@@ -1,36 +1,17 @@
-struct EMFields{S<:Number,T<:AbstractVector}
-    psi::S
-    g::S
-    B::T
-    E::T
-end
-
-function Base.show(io::IO, EM::EMFields)
-    print(io, "EMFields")
-    print(io, " B = $(round.(EM.B,digits=3)) [T]")
-    print(io, " E = $(round.(EM.E,digits=3)) [V/m]")
-end
-
-function EMFields(M::T, r, z) where T<:AbstractEquilibrium
-    psi = M(r,z)
-    gval = poloidal_current(M,r,z)
+function fields(M::T, r, z) where T<:AbstractEquilibrium
     B = Bfield(M, r, z)
     E = Efield(M, r, z)
-    return EMFields(psi, gval, B, E)
-end
-
-function fields(M::AbstractEquilibrium, r, z)
-    return EMFields(M, r, z)
+    return B, E
 end
 
 function fields(M::AbstractEquilibrium, x, y, z)
     r = hypot(x,y)
     phi = atan(y,x)
-    F = fields(M,r,z)
+    B, E = fields(M,r,z)
     sp, cp = sincos(phi)
-    B = SVector{3}(F.B[1]*cp - F.B[2]*sp,F.B[1]*sp + F.B[2]*cp,F.B[3])
-    E = SVector{3}(F.E[1]*cp - F.E[2]*sp,F.E[1]*sp + F.E[2]*cp,F.E[3])
-    return EMFields(F.psi, F.g, B, E)
+    B = SVector{3}(B[1]*cp - B[2]*sp, B[1]*sp + B[2]*cp, B[3])
+    E = SVector{3}(E[1]*cp - E[2]*sp, E[1]*sp + E[2]*cp, E[3])
+    return B, E
 end
 
 function Bfield(M::T, r, z) where T<:AbstractEquilibrium
@@ -119,7 +100,7 @@ end
 function Efield(M::T, r, z) where T<:AbstractEquilibrium
 
     psi = M(r,z)
-    phi_grad = phi_gradient(M, psi)
+    phi_grad = electric_potential_gradient(M, psi)
     if phi_grad == 0
         return SVector{3}(zero(r),zero(r),zero(r))
     end
