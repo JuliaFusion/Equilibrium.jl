@@ -7,10 +7,10 @@ R0 = 6.2
 qstar = 1.57
 alpha = -0.155
 
-S1 = SolovevEquilibrium(B0, R0, ϵ, δ, κ, alpha, qstar,B0_dir=1,Ip_dir=1)
-S2 = SolovevEquilibrium(B0, R0, ϵ, δ, κ, alpha, qstar,B0_dir=-1,Ip_dir=1)
-S3 = SolovevEquilibrium(B0, R0, ϵ, δ, κ, alpha, qstar,B0_dir=1,Ip_dir=-1)
-S4 = SolovevEquilibrium(B0, R0, ϵ, δ, κ, alpha, qstar,B0_dir=-1,Ip_dir=-1)
+S1 = solovev(B0, R0, ϵ, δ, κ, alpha, qstar,B0_dir=1,Ip_dir=1)
+S2 = solovev(B0, R0, ϵ, δ, κ, alpha, qstar,B0_dir=-1,Ip_dir=1)
+S3 = solovev(B0, R0, ϵ, δ, κ, alpha, qstar,B0_dir=1,Ip_dir=-1)
+S4 = solovev(B0, R0, ϵ, δ, κ, alpha, qstar,B0_dir=-1,Ip_dir=-1)
 
 btip1 = (1,1)
 btip2 = (-1,1)

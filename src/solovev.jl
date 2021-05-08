@@ -195,37 +195,24 @@ end
 """
 SolovevEquilibrium Structure
 
-Defines the equilibrium that satisfy Δ⋆ψ(x,y) = α + (1 - α)x^2 where r,z = R0*(x,y).
-F(dF/dψ) = -A, μ₀dp/dψ = -C, α = A/(A + C*R0²), ψ₀ = R0²(A + C*R0²)
+Defines the equilibrium that satisfy Δ⋆ψ(x,y) = α + (1 - α)x^2\\
+where (r,z) = (R0 x,R0 y). F(dF/dψ) = -A, μ₀dp/dψ = -C, α = A/(A + C R0²), ψ₀ = R0²(A + C R0²)
 
-`cocos` - COCOS
-
-`B0` - Toroidal magnetic field magnitude on axis [T]
-
-`R0` - Major Radius [m]
-
-`epsilon` - inverse aspect ratio a/R0
-
-`delta` - triangularity
-
-`kappa` - elongation/ellipticity
-
-`alpha` - constant relating beta regime (α)
-
-`qstar` - Kink safety factor
-
-`psi0` - Poloidal flux normalization (ψ₀)
-
-`beta_p` - Poloidal beta
-
-`beta_t` - Toroidal beta
-
-`c` - Coefficients for Solov'ev polynomials
-
-`diverted` - If true then equilibrium has one or more x-points
-
-`symmetric` - If true then equilibrium is up-down symmetric
-
+Fields:\\
+`cocos` - COCOS\\
+`B0` - Toroidal magnetic field magnitude on axis [T]\\
+`R0` - Major Radius [m]\\
+`epsilon` - inverse aspect ratio a/R0\\
+`delta` - triangularity\\
+`kappa` - elongation/ellipticity\\
+`alpha` - constant relating beta regime (α)\\
+`qstar` - Kink safety factor\\
+`psi0` - Poloidal flux normalization (ψ₀)\\
+`beta_p` - Poloidal beta\\
+`beta_t` - Toroidal beta\\
+`c` - Coefficients for Solov'ev polynomials\\
+`diverted` - If true then equilibrium has one or more x-points\\
+`symmetric` - If true then equilibrium is up-down symmetric\\
 `sigma` - Sign of dot(B,J)
 """
 struct SolovevEquilibrium <: AbstractEquilibrium
@@ -247,15 +234,38 @@ struct SolovevEquilibrium <: AbstractEquilibrium
     sigma_Ip::Int
 end
 
-function SolovevEquilibrium(B0, R0, ϵ, δ, κ, α, qstar;
-                            B0_dir = 1, Ip_dir = 1,
-                            diverted::Bool = false,
-                            xpoint::Union{NTuple{2},Nothing} = (diverted ? (R0*(1-1.1*δ*ϵ),-R0*1.1*κ*ϵ) : nothing),
-                            symmetric::Bool = (xpoint == nothing))
+"""
+    solovev(B0, R0, ϵ, δ, κ, q⋆; B0_dir=1, Ip_dir=1, diverted=false, xpoint=nothing, symmetric = true)
+
+Creates a SolovevEquilibrium Structure
+
+Arguments:\\
+`B0` - Toroidal magnetic field magnitude on axis [T]\\
+`R0` - Major Radius [m]\\
+`ϵ` - inverse aspect ratio a/R0\\
+`δ` - triangularity\\
+`κ` - elongation/ellipticity\\
+`α` - constant relating beta regime (α)\\
+`q⋆` - Kink safety factor\\
+
+Keyword Arguments:\\
+`B0_dir` - Direction of the toroidal field (+1 = CCW, -1 = CW)\\
+`Ip_dir` - Direction of the plasma current (+1 = CCW, -1 = CW)\\
+`diverted` - If true then equilibrium has one or more x-points\\
+`xpoint` - If diverted = true, then xpoint is set to (R0*(1-1.1*δ*ϵ), -R0*1.1*κ*ϵ) else nothing\\
+`symmetric` - Is equilibrium up-down symmetric\\
+"""
+function solovev(B0, R0, ϵ, δ, κ, α, qstar;
+                 B0_dir = 1, Ip_dir = 1,
+                 diverted::Bool = false,
+                 xpoint::Union{NTuple{2},Nothing} = (diverted ? (R0*(1-1.1*δ*ϵ),-R0*1.1*κ*ϵ) : nothing),
+                 symmetric::Bool = (xpoint == nothing))
 
     if δ > sin(1)
         @warn "Equilibrium is not convex. δ > sin(1)"
     end
+
+    diverted = xpoint != nothing
 
     #Eq. 11
     δ₀ = asin(δ)

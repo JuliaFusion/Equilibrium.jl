@@ -1,18 +1,12 @@
 """
 COCOS Structure
 
-`cocos::Int`           = COCOS ID number
-
-`exp_Bp::Int`          = 0 or 1, depending if psi is already divided by 2pi or not, respectively
-
-`sigma_Bp::Int`        = +1 or -1, depending if psi is increasing or decreasing with Ip and B0 positive
-
-`sigma_RpZ::Int`       = +1 or -1, depending if (R,phi,Z) is right-handed or (R,Z,phi), respectively
-
-`sigma_rhotp::Int`     = +1 or -1, depending if (rho, theta, phi) is right-handed or (rho,phi,theta), repectively
-
-`sign_q_pos::Int`      = +1 or -1, depending if q is positive or negative with Ip and B0 positive
-
+`cocos::Int`           = COCOS ID number\\
+`exp_Bp::Int`          = 0 or 1, depending if psi is already divided by 2pi or not, respectively\\
+`sigma_Bp::Int`        = +1 or -1, depending if psi is increasing or decreasing with Ip and B0 positive\\
+`sigma_RpZ::Int`       = +1 or -1, depending if (R,phi,Z) is right-handed or (R,Z,phi), respectively\\
+`sigma_rhotp::Int`     = +1 or -1, depending if (rho, theta, phi) is right-handed or (rho,phi,theta), repectively\\
+`sign_q_pos::Int`      = +1 or -1, depending if q is positive or negative with Ip and B0 positive\\
 `sign_pprime_pos::Int` = +1 or -1, depending if dp/dpsi is positive or negative with Ip and B0 positive
 """
 struct COCOS
@@ -63,8 +57,7 @@ end
 
 Returns the right-handed cylindrical coordinate according to the provided COCOS.
 
-`cocos.sigma_RpZ = +1 -> (r, phi, z)`
-
+`cocos.sigma_RpZ = +1 -> (r, phi, z)`\\
 `cocos.sigma_RpZ = -1 -> (r, z, phi)`
 
 """
@@ -85,8 +78,7 @@ end
 
 Returns the indices of the r, phi, and z coordinates, respectively, relative to the provided COCOS.
 
-`cocos.sigma_RpZ = +1 -> (1,2,3)`
-
+`cocos.sigma_RpZ = +1 -> (1,2,3)`\\
 `cocos.sigma_RpZ = -1 -> (1,3,2)`
 
 """
@@ -107,7 +99,7 @@ end
 
 Returns the right-handed poloidal coordinate according to the provided COCOS.
 
-cocos.sigma_rhotp = +1 -> (rho, theta, phi)
+cocos.sigma_rhotp = +1 -> (rho, theta, phi)\\
 cocos.sigma_rhotp = -1 -> (rho, phi, theta)
 """
 function poloidal_cocos(c::COCOS, rho, theta, phi)
@@ -127,7 +119,7 @@ end
 
 Returns the indices of the rho, theta, and phi coordinates, respectively, relative to the provided COCOS.
 
-cocos.sigma_rhotp = +1 -> (1,2,3)
+cocos.sigma_rhotp = +1 -> (1,2,3)\\
 cocos.sigma_rhotp = -1 -> (1,3,2)
 """
 function poloidal_cocos_indices(c::COCOS, rho, theta, phi)
@@ -173,16 +165,12 @@ end
 
 Returns True if equilibrium quantities are consistant with given COCOS
 
-`sigma_B0` - Toroidal magnetic field sign
-
-`sigma_Ip` - Plasma current sign
-
-`sigma_F` - Poloidal current sign
-
-`sigma_pprime` - Pressure gradient sign
-
-`sigma_dpsi` - dpsi/dr sign
-
+Arguments:\\
+`sigma_B0` - Toroidal magnetic field sign\\
+`sigma_Ip` - Plasma current sign\\
+`sigma_F` - Poloidal current sign\\
+`sigma_pprime` - Pressure gradient sign\\
+`sigma_dpsi` - dpsi/dr sign\\
 `cc::Union{Int,COCOS}` - COCOS structure or ID
 """
 function check_cocos(sigma_B0, sigma_Ip, sigma_F, sigma_pprime,
@@ -222,16 +210,12 @@ end
 
 Returns True if equilibrium quantities are consistant with given COCOS
 
-`B0` - Toroidal magnetic field
-
-`Ip` - Plasma current
-
-`F::AbstractVector` - Poloidal current as a function of `psi`
-
-`pprime::AbstracVector` - Pressure gradient w.r.t. `psi` as a function of `psi`
-
-`psi::AbstractVector` - Poloidal flux
-
+Arguments:\\
+`B0` - Toroidal magnetic field\\
+`Ip` - Plasma current\\
+`F::AbstractVector` - Poloidal current as a function of `psi`\\
+`pprime::AbstracVector` - Pressure gradient w.r.t. `psi` as a function of `psi`\\
+`psi::AbstractVector` - Poloidal flux\\
 `cc::Union{Int,COCOS}` - COCOS structure or ID
 """
 function check_cocos(B0, Ip, F::AbstractVector, pprime::AbstractVector,
@@ -256,14 +240,11 @@ end
 
 Returns a dictionary of the multiplicative factors to transform COCOS from `cc_in` to `cc_out`
 
-`sigma_Ip::Union{NTuple{2,Int},Nothing}` - A tuple of the (Input, Output) current sign or nothing
-
-`sigma_B0::Union{NTuple{2,Int},Nothing}` - A tuple of the (Input, Output) toroidal field sign or nothing
-
-`ld::NTuple{2,<:Real}` - A tuple of the (Input, Output) length scale factor. Default = (1,1)
-
-`lB::NTuple{2,<:Real}` - A tuple of the (Input, Output) magnetic field scale factor. Default = (1,1)
-
+Arguments:\\
+`sigma_Ip::Union{NTuple{2,Int},Nothing}` - A tuple of the (Input, Output) current sign or nothing\\
+`sigma_B0::Union{NTuple{2,Int},Nothing}` - A tuple of the (Input, Output) toroidal field sign or nothing\\
+`ld::NTuple{2,<:Real}` - A tuple of the (Input, Output) length scale factor. Default = (1,1)\\
+`lB::NTuple{2,<:Real}` - A tuple of the (Input, Output) magnetic field scale factor. Default = (1,1)\\
 `exp_mu0::NTuple{2,<:Real}` - A tuple of the (Input, Output) mu0 exponent (0, 1). Default = (0,0)
 """
 function transform_cocos(cc_in::COCOS, cc_out::COCOS;
@@ -325,14 +306,11 @@ end
 
 Utility function to identify COCOS coordinate system. If multiple COCOS are possible, then all are returned.
 
-`sigma_B0` - (+1,-1) sign of the toroidal magnetic field
-
-`sigma_Ip` - (+1,-1) sign of toroidal plasma current
-
-`sigma_q`  - (+1,-1) sign of the safety factor (q) within the plasma
-
-`sigma_dpsi` -  +1 if psi is increasing, -1 if psi is decreasing
-
+Arguments:\\
+`sigma_B0` - (+1,-1) sign of the toroidal magnetic field\\
+`sigma_Ip` - (+1,-1) sign of toroidal plasma current\\
+`sigma_q`  - (+1,-1) sign of the safety factor (q) within the plasma\\
+`sigma_dpsi` -  +1 if psi is increasing, -1 if psi is decreasing\\
 `clockwise_phi::Bool` - (optional) [True, False] if phi angle is defined clockwise or not. This is required to identify odd Vs even COCOS. Note that this cannot be determined from the output of a code.
 """
 function identify_cocos(sigma_B0, sigma_Ip, sigma_q, sigma_dpsi,
@@ -374,18 +352,13 @@ end
 
 Utility function to identify COCOS coordinate system. If multiple COCOS are possible, then all are returned.
 
-`B0` - toroidal magnetic field (with sign)
-
-`Ip` - plasma current (with sign)
-
-`q`  -  safety factor profile (with sign) as function of psi
-
-`psi::AbstractVector` -  Vector of poloidal fluxs from the magnetic axis to the plasma boundary
-
-`clockwise_phi::Bool` - (optional) [True, False] if phi angle is defined clockwise or not. This is required to identify odd Vs even COCOS. Note that this cannot be determined from the output of a code.
-
-`a::AbstractVector` - (optional) flux surfaces minor radius as function of psi
-          This is required to identify 2*pi term in psi definition
+Arguments:\\
+`B0` - toroidal magnetic field (with sign)\\
+`Ip` - plasma current (with sign)\\
+`q`  -  safety factor profile (with sign) as function of psi\\
+`psi::AbstractVector` -  Vector of poloidal fluxs from the magnetic axis to the plasma boundary\\
+`clockwise_phi::Bool` - (optional) [True, False] if phi angle is defined clockwise or not. This is required to identify odd Vs even COCOS. Note that this cannot be determined from the output of a code.\\
+`a::AbstractVector` - (optional) flux surfaces minor radius as function of psi. This is required to identify 2*pi term in psi definition
 """
 function identify_cocos(B0, Ip, q::AbstractVector, psi::AbstractVector,
                         clockwise_phi::Union{Bool,Nothing} = nothing,

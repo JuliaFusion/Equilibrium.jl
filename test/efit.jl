@@ -16,10 +16,10 @@ cc2 = 5
 cc3 = 3
 cc4 = 7
 
-M1 = NumericalEquilibrium(g1, clockwise_phi=false)
-M2 = NumericalEquilibrium(g2, clockwise_phi=false)
-M3 = NumericalEquilibrium(g3, clockwise_phi=false)
-M4 = NumericalEquilibrium(g4, clockwise_phi=false)
+M1 = efit(g1, clockwise_phi=false)
+M2 = efit(g2, clockwise_phi=false)
+M3 = efit(g3, clockwise_phi=false)
+M4 = efit(g4, clockwise_phi=false)
 
 r1 = (M1.axis[1]+0.1,M1.axis[2])
 r2 = (M2.axis[1]+0.1,M2.axis[2])
@@ -28,7 +28,7 @@ r4 = (M4.axis[1]+0.1,M4.axis[2])
 
 test_data = ((cc1,g1,M1,r1,btip1), (cc2,g2,M2,r2,btip2), (cc3,g3,M3,r3,btip3), (cc4,g4,M4,r4,btip4))
 
-@testset "Numerical Tests" begin
+@testset "EFIT Tests" begin
 
     @testset "Bt-Ip Signs" begin
         for (cc, g, M, r, btip) in test_data

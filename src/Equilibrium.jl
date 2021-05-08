@@ -43,16 +43,16 @@ export cylindrical_cocos, poloidal_cocos, cylindrical_cocos_indices, poloidal_co
 
 include("boundary.jl")
 export Boundary, PlasmaBoundary, FluxSurface, Wall, in_boundary, in_plasma, in_vessel
-export boundary, circumference, average, area, area_average, volume, volume_average
+export boundary, flux_surface, circumference, average, area, area_average, volume, volume_average
 
 include("solovev.jl")
-export SolovevEquilibrium, boundary, limits
+export SolovevEquilibrium, solovev
 
 include("fields.jl")
 export Bfield, Efield, Jfield, EMFields, fields, gradB, curlB, poloidal_Bfield, poloidal_Jfield
 
-include("numerical.jl")
-export NumericalEquilibrium
+include("efit.jl")
+export EFITEquilibrium, efit
 
 include("efit_io.jl")
 export read_geqdsk

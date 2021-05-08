@@ -55,6 +55,8 @@ function boundary(M::AbstractEquilibrium, psi, dx=0.01,dy=0.01)
     return Boundary(xc,yc)
 end
 
+const flux_surface = boundary
+
 function circumference(b::Boundary)
     p = b.points
     return sum(norm(p[i+1] .- p[i]) for i=1:(length(p)-1))

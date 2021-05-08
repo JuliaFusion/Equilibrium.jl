@@ -6,8 +6,8 @@ mu0 = 4pi*10^-7
 
 @testset "Equilibrium" begin
 
-include("numerical.jl")
-
 include("solovev.jl")
+
+include("efit.jl")
 
 end
