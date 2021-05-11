@@ -481,12 +481,16 @@ function psi_gradient(S::SolovevEquilibrium,r,z)
 end
 
 _solovev_magnetic_axis = Dict{SolovevEquilibrium,NTuple{2}}()
-function magnetic_axis(S::SolovevEquilibrium)
+function clear_cache(S)
+    delete!(_solovev_magnetic_axis,S)
+end
+
+function magnetic_axis(S::SolovevEquilibrium; x0 = (S.R0, zero(S.R0)))
     if S in keys(_solovev_magnetic_axis)
         return _solovev_magnetic_axis[S]
     else
-        sigma_psi = sign(S(S.R0,0))
-        res = Optim.optimize(x->-sigma_psi*S(x[1],x[2]), x -> psi_gradient(S,x[1],x[2]), [S.R0, zero(S.R0)], inplace=false)
+        sigma_psi = sign(S(x0[1],x0[2]))
+        res = Optim.optimize(x->-sigma_psi*S(x[1],x[2]), x -> -sigma_psi*psi_gradient(S,x[1],x[2]), collect(x0), inplace=false)
         axis = (res.minimizer[1],res.minimizer[2])
         _solovev_magnetic_axis[S] = axis
     end

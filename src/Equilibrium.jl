@@ -46,7 +46,7 @@ export Boundary, PlasmaBoundary, FluxSurface, Wall, in_boundary, in_plasma, in_v
 export boundary, flux_surface, circumference, average, area, area_average, volume, volume_average
 
 include("solovev.jl")
-export SolovevEquilibrium, solovev
+export SolovevEquilibrium, solovev, clear_cache
 
 include("fields.jl")
 export Bfield, Efield, Jfield, EMFields, fields, gradB, curlB, poloidal_Bfield, poloidal_Jfield
