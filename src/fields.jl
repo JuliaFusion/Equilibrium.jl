@@ -18,14 +18,16 @@ function Bfield(M::T, r, z) where T<:AbstractEquilibrium
     psi = M(r,z)
     gval = poloidal_current(M,psi)
     grad_psi = psi_gradient(M,r,z)
-    grad_psi_norm = norm(grad_psi)
 
     # Calculate B-Field
     cc = cocos(M)
-    cocos_factor = cc.sigma_RpZ*cc.sigma_Bp/((2pi)^cc.exp_Bp)
-    BR =  cocos_factor*grad_psi[2]/r
-    Bz = -cocos_factor*grad_psi[1]/r
-    Bt = gval/r
+    invr = inv(r)
+    #invr not part of cocos factor but added here for performance
+    cocos_factor = invr*cc.sigma_RpZ*cc.sigma_Bp/((2pi)^cc.exp_Bp)
+
+    BR =  cocos_factor*grad_psi[2]
+    Bz = -cocos_factor*grad_psi[1]
+    Bt = gval*invr
 
     B = SVector{3}(cylindrical_cocos(cc, BR, Bt, Bz))
     return B

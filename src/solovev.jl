@@ -3,7 +3,7 @@
 #
 # Ideal MHD Freidberg Chapter 6.6.1
 
-function _solovev_polynomials(x,y)
+@fastmath function _solovev_polynomials(x, y, ::Val{N} = Val(12)) where N
     # Eq. 8 & Eq. 27
     ψ₁  = 1
     ψ₂  = x^2
@@ -12,18 +12,20 @@ function _solovev_polynomials(x,y)
     ψ₅  = 2*y^4 - 9*y^2*x^2 + 3*x^4*log(x) - 12*x^2*y^2*log(x)
     ψ₆  = x^6 - 12*x^4*y^2 + 8*x^2*y^4
     ψ₇  = 8*y^6 - 140*y^4*x^2 + 75*y^2*x^4 - 15*x^6*log(x) + 180*x^4*y^2*log(x) - 120*x^2*y^4*log(x)
+    N == 7 && return @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇]
+
     ψ₈  = y
     ψ₉  = y*x^2
     ψ₁₀ = y^3 - 3*y*x^2*log(x)
     ψ₁₁ = 3*y*x^4 - 4*y^3*x^2
     ψ₁₂ = 8*y^5 - 45*y*x^4 - 80*y^3*x^2*log(x) + 60*y*x^4*log(x)
 
-    ψ_polys = [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
+    ψ_polys = @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
 
     return ψ_polys
 end
 
-function _solovev_polynomials_Dx(x,y)
+@fastmath function _solovev_polynomials_Dx(x, y, ::Val{N} = Val(12)) where N
     # Derivatives from Mathematica
     ψ₁  = zero(x)
     ψ₂  = 2*x
@@ -32,18 +34,20 @@ function _solovev_polynomials_Dx(x,y)
     ψ₅  = 3*x^3 - 30*x*y^2 + 12*x^3*log(x) - 24*x*y^2*log(x)
     ψ₆  = 6*x^5 - 48*x^3*y^2 + 16*x*y^4
     ψ₇  = -5*x*(3*x^4 - 96*x^2*y^2 + 80*y^4 + 6*(3*x^4 - 24*x^2*y^2 + 8*y^4)*log(x))
+    N == 7 && return @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇]
+
     ψ₈  = zero(x)
     ψ₉  = 2*y*x
     ψ₁₀ = -3*x*y*(1 + 2*log(x))
     ψ₁₁ = 12*x^3*y - 8*x*y^3
     ψ₁₂ = 40*x*y*(-3*x^2 - 2*y^2 + (6*x^2 - 4*y^2)*log(x))
 
-    ψ_polys = [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
+    ψ_polys = @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
 
     return ψ_polys
 end
 
-function _solovev_polynomials_Dxx(x,y)
+@fastmath function _solovev_polynomials_Dxx(x, y, ::Val{N} = Val(12)) where N
     # Derivatives from Mathematica
     ψ₁  = zero(x)
     ψ₂  = 2*one(x)
@@ -52,18 +56,20 @@ function _solovev_polynomials_Dxx(x,y)
     ψ₅  = 3*(7*x^2 - 18*y^2 + 4*(3*x^2 - 2*y^2)*log(x))
     ψ₆  = 2*(15*x^4 - 72*x^2*y^2 + 8*y^4)
     ψ₇  = -5*(33*x^4 - 432*x^2*y^2 + 128*y^4 + 6*(15*x^4 - 72*x^2*y^2 + 8*y^4)*log(x))
+    N == 7 && return @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇]
+
     ψ₈  = zero(x)
     ψ₉  = 2*y
     ψ₁₀ = -3*y*(3 + 2*log(x))
     ψ₁₁ = 36*x^2*y - 8*y^3
     ψ₁₂ = -40*y*(3*x^2 + 6*y^2 - 18*x^2*log(x) + 4*y^2*log(x))
 
-    ψ_polys = [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
+    ψ_polys = @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
 
     return ψ_polys
 end
 
-function _solovev_polynomials_Dy(x,y)
+@fastmath function _solovev_polynomials_Dy(x, y, ::Val{N} = Val(12)) where N
     # Derivatives from Mathematica
     ψ₁  = zero(y)
     ψ₂  = zero(y)
@@ -72,18 +78,20 @@ function _solovev_polynomials_Dy(x,y)
     ψ₅  = 2*y*(-9*x^2 + 4*y^2 - 12*x^2*log(x))
     ψ₆  = -24*x^4*y + 32*x^2*y^3
     ψ₇  = 2*y*(75*x^4 - 280*x^2*y^2 + 24*y^4 + 60*(3*x^4 - 4*x^2*y^2)*log(x))
+    N == 7 && return @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇]
+
     ψ₈  = one(y)
     ψ₉  = x^2
     ψ₁₀ = 3*(y^2 - x^2*log(x))
     ψ₁₁ = 3*(x^4 - 4*x^2*y^2)
     ψ₁₂ = 5*(-9*x^4 + 8*y^4 + 12*(x^4 - 4*x^2*y^2)*log(x))
 
-    ψ_polys = [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
+    ψ_polys = @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
 
     return ψ_polys
 end
 
-function _solovev_polynomials_Dyy(x,y)
+@fastmath function _solovev_polynomials_Dyy(x, y, ::Val{N} = Val(12)) where N
     # Derivatives from Mathematica
     ψ₁  = zero(y)
     ψ₂  = zero(y)
@@ -92,27 +100,29 @@ function _solovev_polynomials_Dyy(x,y)
     ψ₅  = -6*(3*x^2 - 4*y^2 + 4*x^2*log(x))
     ψ₆  = -24*x^2*(x^2 - 4*y^2)
     ψ₇  = 30*(5*x^4 - 56*x^2*y^2 + 8*y^4 + 12*(x^4 - 4*x^2*y^2)*log(x))
+    N == 7 && return @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇]
+
     ψ₈  = zero(y)
     ψ₉  = zero(y)
     ψ₁₀ = 6*y
     ψ₁₁ = -24*x^2*y
     ψ₁₂ = 160*y*(y^2 - 3*x^2*log(x))
 
-    ψ_polys = [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
+    ψ_polys = @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
 
     return ψ_polys
 end
 
-function _solovev_psi_p(x,y,A)
+@fastmath function _solovev_psi_p(x,y,A)
     return x^4/8 + A*(x^2*log(x)/2 - x^4/8)
 end
 
-function _solovev_psi_p_Dx(x,y,A)
+@fastmath function _solovev_psi_p_Dx(x,y,A)
     # Derivatives from Mathematica
     return (x*(A + x^2 - A*x^2 + 2*A*log(x)))/2
 end
 
-function _solovev_psi_p_Dxx(x,y,A)
+@fastmath function _solovev_psi_p_Dxx(x,y,A)
     # Derivatives from Mathematica
     return (3*(A + x^2 - A*x^2))/2 + A*log(x)
 end
@@ -127,65 +137,65 @@ function _solovev_psi_p_Dyy(x,y,A)
     return zero(y)
 end
 
-function _solovev_psi(x,y,A,coeffs)
+function _solovev_psi(x,y,A,coeffs::SVector{N}) where N
 
     ψ_p = _solovev_psi_p(x,y,A)
-    ψ_polys = _solovev_polynomials(x,y)
+    ψ_polys = _solovev_polynomials(x,y,Val(N))
 
     ψ_h = zero(x)
-    for i in eachindex(coeffs)
+    @inbounds for i=1:N
         ψ_h += coeffs[i]*ψ_polys[i]
     end
 
     return ψ_p + ψ_h
 end
 
-function _solovev_psi_Dx(x,y,A,coeffs)
+function _solovev_psi_Dx(x,y,A,coeffs::SVector{N}) where N
 
     ψ_p = _solovev_psi_p_Dx(x,y,A)
-    ψ_polys = _solovev_polynomials_Dx(x,y)
+    ψ_polys = _solovev_polynomials_Dx(x,y,Val(N))
 
     ψ_h = zero(x)
-    for i in eachindex(coeffs)
+    @inbounds for i=1:N
         ψ_h += coeffs[i]*ψ_polys[i]
     end
 
     return ψ_p + ψ_h
 end
 
-function _solovev_psi_Dxx(x,y,A,coeffs)
+function _solovev_psi_Dxx(x,y,A,coeffs::SVector{N}) where N
 
     ψ_p = _solovev_psi_p_Dxx(x,y,A)
-    ψ_polys = _solovev_polynomials_Dxx(x,y)
+    ψ_polys = _solovev_polynomials_Dxx(x,y,Val(N))
 
     ψ_h = zero(x)
-    for i in eachindex(coeffs)
+    @inbounds for i=1:N
         ψ_h += coeffs[i]*ψ_polys[i]
     end
 
     return ψ_p + ψ_h
 end
 
-function _solovev_psi_Dy(x,y,A,coeffs)
+function _solovev_psi_Dy(x,y,A,coeffs::SVector{N}) where N
 
     ψ_p = _solovev_psi_p_Dy(x,y,A)
-    ψ_polys = _solovev_polynomials_Dy(x,y)
+    ψ_polys = _solovev_polynomials_Dy(x,y,Val(N))
 
     ψ_h = zero(y)
-    for i in eachindex(coeffs)
+    @inbounds for i=1:N
         ψ_h += coeffs[i]*ψ_polys[i]
     end
 
     return ψ_p + ψ_h
 end
 
-function _solovev_psi_Dyy(x,y,A,coeffs)
+function _solovev_psi_Dyy(x,y,A,coeffs::SVector{N}) where N
 
     ψ_p = _solovev_psi_p_Dyy(x,y,A)
-    ψ_polys = _solovev_polynomials_Dyy(x,y)
+    ψ_polys = _solovev_polynomials_Dyy(x,y,Val(N))
 
     ψ_h = zero(x)
-    for i in eachindex(coeffs)
+    @inbounds for i=1:N
         ψ_h += coeffs[i]*ψ_polys[i]
     end
 
@@ -215,19 +225,19 @@ Fields:\\
 `symmetric` - If true then equilibrium is up-down symmetric\\
 `sigma` - Sign of dot(B,J)
 """
-struct SolovevEquilibrium <: AbstractEquilibrium
+struct SolovevEquilibrium{T,N} <: AbstractEquilibrium
     cocos::COCOS
-    B0
-    R0
-    epsilon
-    delta
-    kappa
-    alpha
-    qstar
-    psi0
-    beta_p
-    beta_t
-    c::AbstractVector
+    B0::T
+    R0::T
+    epsilon::T
+    delta::T
+    kappa::T
+    alpha::T
+    qstar::T
+    psi0::T
+    beta_p::T
+    beta_t::T
+    c::SVector{N,T}
     diverted::Bool
     symmetric::Bool
     sigma_B0::Int
@@ -308,7 +318,7 @@ function solovev(B0, R0, ϵ, δ, κ, α, qstar;
             Ψ_p[7] = _solovev_psi_p_Dxx(x, y, α) + N₃*_solovev_psi_p_Dy(x, y, α)
             Ψ_h[:,7] .= _solovev_polynomials_Dxx(x, y) .+ N₃*_solovev_polynomials_Dy(x, y)
 
-            c = Ψ_h[1:7,1:7]'\(-Ψ_p[1:7])
+            c = SVector{7}(Ψ_h[1:7,1:7]'\(-Ψ_p[1:7]))
         else
             xsep, ysep = xpoint[1]/R0, xpoint[2]/R0 # normalize xpoint
 
@@ -342,7 +352,7 @@ function solovev(B0, R0, ϵ, δ, κ, α, qstar;
             Ψ_p[7] = _solovev_psi_p_Dyy(x, y, α) + N₂*_solovev_psi_p_Dx(x, y, α)
             Ψ_h[:,7] .= _solovev_polynomials_Dyy(x, y) .+ N₂*_solovev_polynomials_Dx(x, y)
 
-            c = Ψ_h[1:7,1:7]'\(-Ψ_p[1:7])
+            c = SVector{7}(Ψ_h[1:7,1:7]'\(-Ψ_p[1:7]))
         end
     else
         xsep, ysep = xpoint[1]/R0, xpoint[2]/R0 # normalize xpoint
@@ -400,7 +410,7 @@ function solovev(B0, R0, ϵ, δ, κ, α, qstar;
         Ψ_p[12] = _solovev_psi_p_Dxx(x, y, α) + N₃*_solovev_psi_p_Dy(x, y, α)
         Ψ_h[:,12] .= _solovev_polynomials_Dxx(x, y) .+ N₃*_solovev_polynomials_Dy(x, y)
 
-        c = Ψ_h'\(-Ψ_p)
+        c = SVector{12}(Ψ_h'\(-Ψ_p))
     end
 
     τ = range(0,2pi,length=100)
@@ -422,7 +432,7 @@ function solovev(B0, R0, ϵ, δ, κ, α, qstar;
     β_t = ϵ^2*β_p/(qstar^2)
 
     cc = 3
-    return SolovevEquilibrium(cocos(cc),promote(B0,R0,ϵ,δ,κ,α,qstar,ψ0,β_p,β_t)..., c, diverted, symmetric, B0_dir, Ip_dir)
+    return SolovevEquilibrium(cocos(cc),promote(B0,R0,ϵ,δ,κ,α,qstar,ψ0,β_p,β_t)...,c, diverted, symmetric, B0_dir, Ip_dir)
 end
 
 function (S::SolovevEquilibrium)(r,z)
@@ -477,7 +487,7 @@ end
 
 function psi_gradient(S::SolovevEquilibrium,r,z)
     x, y = r/S.R0, z/S.R0
-    return S.psi0*SVector{2}(_solovev_psi_Dx(x,y,S.alpha,S.c), _solovev_psi_Dy(x,y,S.alpha,S.c))/S.R0
+    return (S.psi0/S.R0)*SVector{2}(_solovev_psi_Dx(x,y,S.alpha,S.c), _solovev_psi_Dy(x,y,S.alpha,S.c))
 end
 
 _solovev_magnetic_axis = Dict{SolovevEquilibrium,NTuple{2}}()

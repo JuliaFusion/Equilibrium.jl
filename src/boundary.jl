@@ -59,32 +59,32 @@ const flux_surface = boundary
 
 function circumference(b::Boundary)
     p = b.points
-    return sum(norm(p[i+1] .- p[i]) for i=1:(length(p)-1))
+    return sum(@inbounds norm(p[i+1] .- p[i]) for i=1:(length(p)-1))
 end
 
 function average(b::Boundary, F)
     p = b.points
-    return sum(norm(p[i+1] .- p[i])*(F(p[i][1],p[i][2])) for i=1:(length(p)-1))/circumference(b)
+    return sum(@inbounds norm(p[i+1] .- p[i])*(F(p[i][1],p[i][2])) for i=1:(length(p)-1))/circumference(b)
 end
 
 area(s::Boundary) = PolygonOps.area(s.points)
 
 function surface_area(b::Boundary)
     p = b.points
-    return 2pi*sum(norm(p[i+1] .- p[i])*(p[i+1][1] + p[i][1])/2 for i=1:(length(p)-1))
+    return 2pi*sum(@inbounds norm(p[i+1] .- p[i])*(p[i+1][1] + p[i][1])/2 for i=1:(length(p)-1))
 end
 
 function surface_area_average(b::Boundary, F)
     A = surface_area(b)
     p = b.points
-    return (2pi/A)*sum(norm(p[i+1] .- p[i])*((p[i+1][1] + p[i][1])/2)*
+    return (2pi/A)*sum(@inbounds norm(p[i+1] .- p[i])*((p[i+1][1] + p[i][1])/2)*
                    (F(p[i+1][1],p[i+1][2]) + F(p[i][1],p[i][2]))/2 for i=1:(length(p)-1))
 end
 
 function surface_area_average(b::Boundary, F::Vector)
     A = surface_area(b)
     p = b.points
-    return (2pi/A)*sum(norm(p[i+1] .- p[i])*((p[i+1][1] + p[i][1])/2)*
+    return (2pi/A)*sum(@inbounds norm(p[i+1] .- p[i])*((p[i+1][1] + p[i][1])/2)*
                        (F[i+1] + F[i])/2 for i=1:(length(p)-1))
 end
 
@@ -105,7 +105,7 @@ function area_average(b::Boundary, F::AbstractMatrix, x::AbstractRange, y::Abstr
     dx = step(x)
     dy = step(y)
     A = zero(eltype(x))
-    for ix in eachindex(x), iy in eachindex(y)
+    @inbounds for ix in eachindex(x), iy in eachindex(y)
         if in_boundary(b, (x[ix],y[iy]))
             A = A + F[ix,iy]*dx*dy
         end
@@ -143,7 +143,7 @@ function volume_average(b::Boundary, F::AbstractMatrix, x::AbstractRange, y::Abs
     dx = step(x)
     dy = step(y)
     A = zero(eltype(x))
-    for ix in eachindex(x), iy in eachindex(y)
+    @inbounds for ix in eachindex(x), iy in eachindex(y)
         if in_boundary(b, (x[ix],y[iy]))
             A = A + F[ix,iy]*x[ix]*dx*dy
         end
