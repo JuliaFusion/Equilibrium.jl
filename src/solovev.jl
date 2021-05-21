@@ -600,3 +600,36 @@ end
 
 electric_potential(S::SolovevEquilibrium,psi) = zero(psi)
 electric_potential_gradient(S::SolovevEquilibrium,psi) = zero(psi)
+
+# === Special Cases ===
+
+function curlB(S::SolovevEquilibrium, r, z)
+    # curlB = mu0*J
+    psi = S(r,z)
+    gval = poloidal_current(S,psi)
+    grad_psi = psi_gradient(S,r,z)
+
+    gp = poloidal_current_gradient(S,psi)
+    pp = pressure_gradient(S,psi)
+
+    cc = cocos(S)
+
+    invr = inv(r)
+    cocos_factor = cc.sigma_RpZ*invr
+    cBr = -cocos_factor*gp*grad_psi[2]
+    cBz =  cocos_factor*gp*grad_psi[1]
+
+    cocos_factor = -cc.sigma_Bp*((2pi)^cc.exp_Bp)
+    cBt = cocos_factor*(r*pp*mu0 + gval*gp*invr)
+
+    return SVector{3}(cylindrical_cocos(cc,cBr,cBt,cBz))
+end
+
+function curlB(S::SolovevEquilibrium, x, y, z)
+    r = hypot(x,y)
+    phi = atan(y,x)
+    cB = curlB(S,r,z)
+    sp, cp = sincos(phi)
+    cB_xyz = SVector{3}(cB[1]*cp - cB[2]*sp, cB[1]*sp + cB[2]*cp, cB[3])
+    return cB_xyz
+end

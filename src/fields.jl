@@ -68,12 +68,13 @@ function Jfield(M::T, r, z; curl=false) where T<:AbstractEquilibrium
 
     cc = cocos(M)
 
-    cocos_factor = cc.sigma_RpZ
-    jr = -cocos_factor*gp*grad_psi[2]/(r*mu0)
-    jz =  cocos_factor*gp*grad_psi[1]/(r*mu0)
+    invrmu0 = inv(r*mu0)
+    cocos_factor = cc.sigma_RpZ*invrmu0
+    jr = -cocos_factor*gp*grad_psi[2]
+    jz =  cocos_factor*gp*grad_psi[1]
 
     cocos_factor = -cc.sigma_Bp*((2pi)^cc.exp_Bp)
-    jt = cocos_factor*(r*pp + gval*gp/(r*mu0))
+    jt = cocos_factor*(r*pp + gval*gp*invrmu0)
 
     return SVector{3}(cylindrical_cocos(cc,jr,jt,jz))
 end
@@ -190,10 +191,17 @@ function safety_factor(M::AbstractEquilibrium, psi)
     return q
 end
 
-function gradB(M::AbstractEquilibrium, r, z)
+function gradB_autodiff(M::AbstractEquilibrium, r, z)
     gB_rz = ForwardDiff.gradient(x->norm(Bfield(M,x[1],x[2])), SVector{2}(r,z))
     return SVector{3}(cylindrical_cocos(cocos(M), gB_rz[1], 0.0, gB_rz[2]))
 end
+
+function gradB_autodiff(M::AbstractEquilibrium, x, y, z)
+    gB_xyz = ForwardDiff.gradient(x->norm(Bfield(M,x[1],x[2],x[3])), SVector{3}(x,y,z))
+    return SVector{3}(gB_xyz[1], gB_xyz[2], gB_xyz[3])
+end
+
+gradB(M::AbstractEquilibrium, r, z) = gradB_autodiff(M, r, z)
 
 function gradB(M::AbstractEquilibrium, x, y, z)
     r = hypot(x,y)
@@ -203,7 +211,7 @@ function gradB(M::AbstractEquilibrium, x, y, z)
     gB_xyz = SVector{3}(gB[1]*cp - gB[2]*sp, gB[1]*sp + gB[2]*cp, gB[3])
 end
 
-function curlB(M::AbstractEquilibrium, r, z)
+function curlB_autodiff(M::AbstractEquilibrium, r, z)
     cc = cocos(M)
     B = Bfield(M,r,z)
 
@@ -216,7 +224,18 @@ function curlB(M::AbstractEquilibrium, r, z)
     return cc.sigma_RpZ*SVector{3}(cylindrical_cocos(cc, -J[2,2], J[1,2] - J[3,1], (B[2]/r + J[2,1])))
 end
 
-function curlB(M::AbstractEquilibrium, x, y, z)
+function curlB_autodiff(M::AbstractEquilibrium, x, y, z)
     J = ForwardDiff.jacobian(x->Bfield(M,x[1],x[2],x[3]),SVector{3}(x,y,z))
     return SVector{3}(J[3,2] - J[2,3], J[1,3]-J[3,1], J[2,1] - J[1,2])
+end
+
+curlB(M::AbstractEquilibrium, r, z) = curlB_autodiff(M, r, z)
+
+function curlB(M::AbstractEquilibrium, x, y, z)
+    r = hypot(x,y)
+    phi = atan(y,x)
+    cB = curlB(M,r,z)
+    sp, cp = sincos(phi)
+    cB_xyz = SVector{3}(cB[1]*cp - cB[2]*sp, cB[1]*sp + cB[2]*cp, cB[3])
+    return cB_xyz
 end
