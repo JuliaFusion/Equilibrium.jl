@@ -3,157 +3,203 @@
 #
 # Ideal MHD Freidberg Chapter 6.6.1
 
-@fastmath function _solovev_polynomials(x, y, ::Val{N} = Val(12)) where N
+@fastmath function _solovev_polynomials(x, y, ::Val{N} = Val(12); logx=log(x)) where N
+
+    x2 = x^2
+    x4 = x2^2
+    x6 = x2^3
+    y2 = y^2
+    y4 = y2^2
+    y6 = y2^3
+
     # Eq. 8 & Eq. 27
     ψ₁  = 1
-    ψ₂  = x^2
-    ψ₃  = y^2 - x^2*log(x)
-    ψ₄  = x^4 - 4*x^2*y^2
-    ψ₅  = 2*y^4 - 9*y^2*x^2 + 3*x^4*log(x) - 12*x^2*y^2*log(x)
-    ψ₆  = x^6 - 12*x^4*y^2 + 8*x^2*y^4
-    ψ₇  = 8*y^6 - 140*y^4*x^2 + 75*y^2*x^4 - 15*x^6*log(x) + 180*x^4*y^2*log(x) - 120*x^2*y^4*log(x)
+    ψ₂  = x2
+    ψ₃  = y2 - x2*logx
+    ψ₄  = x4 - 4*x2*y2
+    ψ₅  = 2*y4 - 9*y2*x2 + 3*x4*logx - 12*x2*y2*logx
+    ψ₆  = x6 - 12*x4*y2 + 8*x2*y4
+    ψ₇  = 8*y6 - 140*y4*x2 + 75*y2*x4 - 15*x6*logx + 180*x4*y2*logx - 120*x2*y4*logx
+
     N == 7 && return @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇]
 
+    x3 = x^3
+    y3 = y^3
+    y5 = y^5
+
     ψ₈  = y
-    ψ₉  = y*x^2
-    ψ₁₀ = y^3 - 3*y*x^2*log(x)
-    ψ₁₁ = 3*y*x^4 - 4*y^3*x^2
-    ψ₁₂ = 8*y^5 - 45*y*x^4 - 80*y^3*x^2*log(x) + 60*y*x^4*log(x)
+    ψ₉  = y*x2
+    ψ₁₀ = y3 - 3*y*x2*logx
+    ψ₁₁ = 3*y*x4 - 4*y3*x2
+    ψ₁₂ = 8*y5 - 45*y*x4 - 80*y3*x2*logx + 60*y*x4*logx
 
     ψ_polys = @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
 
     return ψ_polys
 end
 
-@fastmath function _solovev_polynomials_Dx(x, y, ::Val{N} = Val(12)) where N
+@fastmath function _solovev_polynomials_Dx(x, y, ::Val{N} = Val(12); logx=log(x)) where N
+
+    x2 = x^2
+    x3 = x^3
+    x4 = x2^2
+    x5 = x^5
+    x6 = x2^3
+    y2 = y^2
+    y4 = y2^2
+
     # Derivatives from Mathematica
     ψ₁  = zero(x)
     ψ₂  = 2*x
-    ψ₃  = -(2*x*log(x)+ x)
-    ψ₄  = 4*x^3 - 8*x*y^2
-    ψ₅  = 3*x^3 - 30*x*y^2 + 12*x^3*log(x) - 24*x*y^2*log(x)
-    ψ₆  = 6*x^5 - 48*x^3*y^2 + 16*x*y^4
-    ψ₇  = -5*x*(3*x^4 - 96*x^2*y^2 + 80*y^4 + 6*(3*x^4 - 24*x^2*y^2 + 8*y^4)*log(x))
+    ψ₃  = -(2*x*logx+ x)
+    ψ₄  = 4*x3 - 8*x*y2
+    ψ₅  = 3*x3 - 30*x*y2 + 12*x3*logx - 24*x*y2*logx
+    ψ₆  = 6*x5 - 48*x3*y2 + 16*x*y4
+    ψ₇  = -5*x*(3*x4 - 96*x2*y2 + 80*y4 + 6*(3*x4 - 24*x2*y2 + 8*y4)*logx)
+
     N == 7 && return @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇]
+
+    y3 = y^3
 
     ψ₈  = zero(x)
     ψ₉  = 2*y*x
-    ψ₁₀ = -3*x*y*(1 + 2*log(x))
-    ψ₁₁ = 12*x^3*y - 8*x*y^3
-    ψ₁₂ = 40*x*y*(-3*x^2 - 2*y^2 + (6*x^2 - 4*y^2)*log(x))
+    ψ₁₀ = -3*x*y*(1 + 2*logx)
+    ψ₁₁ = 12*x3*y - 8*x*y3
+    ψ₁₂ = 40*x*y*(-3*x2 - 2*y2 + (6*x2 - 4*y2)*logx)
 
     ψ_polys = @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
 
     return ψ_polys
 end
 
-@fastmath function _solovev_polynomials_Dxx(x, y, ::Val{N} = Val(12)) where N
+@fastmath function _solovev_polynomials_Dxx(x, y, ::Val{N} = Val(12); logx=log(x)) where N
+
+    x2 = x^2
+    x3 = x^3
+    x4 = x2^2
+    x6 = x2^3
+    y2 = y^2
+    y4 = y2^2
+
     # Derivatives from Mathematica
     ψ₁  = zero(x)
     ψ₂  = 2*one(x)
-    ψ₃  = -2*log(x) - 3
-    ψ₄  = 12*x^2 - 8*y^2
-    ψ₅  = 3*(7*x^2 - 18*y^2 + 4*(3*x^2 - 2*y^2)*log(x))
-    ψ₆  = 2*(15*x^4 - 72*x^2*y^2 + 8*y^4)
-    ψ₇  = -5*(33*x^4 - 432*x^2*y^2 + 128*y^4 + 6*(15*x^4 - 72*x^2*y^2 + 8*y^4)*log(x))
+    ψ₃  = -2*logx - 3
+    ψ₄  = 12*x2 - 8*y2
+    ψ₅  = 3*(7*x2 - 18*y2 + 4*(3*x2 - 2*y2)*logx)
+    ψ₆  = 2*(15*x4 - 72*x2*y2 + 8*y4)
+    ψ₇  = -5*(33*x4 - 432*x2*y2 + 128*y4 + 6*(15*x4 - 72*x2*y2 + 8*y4)*logx)
+
     N == 7 && return @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇]
+
+    y3 = y^3
 
     ψ₈  = zero(x)
     ψ₉  = 2*y
-    ψ₁₀ = -3*y*(3 + 2*log(x))
-    ψ₁₁ = 36*x^2*y - 8*y^3
-    ψ₁₂ = -40*y*(3*x^2 + 6*y^2 - 18*x^2*log(x) + 4*y^2*log(x))
+    ψ₁₀ = -3*y*(3 + 2*logx)
+    ψ₁₁ = 36*x2*y - 8*y3
+    ψ₁₂ = -40*y*(3*x2 + 6*y2 - 18*x2*logx + 4*y2*logx)
 
     ψ_polys = @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
 
     return ψ_polys
 end
 
-@fastmath function _solovev_polynomials_Dy(x, y, ::Val{N} = Val(12)) where N
+@fastmath function _solovev_polynomials_Dy(x, y, ::Val{N} = Val(12); logx=log(x)) where N
+
+    x2 = x^2
+    x3 = x^3
+    x4 = x2^2
+    x6 = x2^3
+    y2 = y^2
+    y3 = y^3
+    y4 = y2^2
+
     # Derivatives from Mathematica
     ψ₁  = zero(y)
     ψ₂  = zero(y)
     ψ₃  = 2*y
-    ψ₄  = -8*x^2*y
-    ψ₅  = 2*y*(-9*x^2 + 4*y^2 - 12*x^2*log(x))
-    ψ₆  = -24*x^4*y + 32*x^2*y^3
-    ψ₇  = 2*y*(75*x^4 - 280*x^2*y^2 + 24*y^4 + 60*(3*x^4 - 4*x^2*y^2)*log(x))
+    ψ₄  = -8*x2*y
+    ψ₅  = 2*y*(-9*x2 + 4*y2 - 12*x2*logx)
+    ψ₆  = -24*x4*y + 32*x2*y3
+    ψ₇  = 2*y*(75*x4 - 280*x2*y2 + 24*y4 + 60*(3*x4 - 4*x2*y2)*logx)
+
     N == 7 && return @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇]
 
     ψ₈  = one(y)
-    ψ₉  = x^2
-    ψ₁₀ = 3*(y^2 - x^2*log(x))
-    ψ₁₁ = 3*(x^4 - 4*x^2*y^2)
-    ψ₁₂ = 5*(-9*x^4 + 8*y^4 + 12*(x^4 - 4*x^2*y^2)*log(x))
+    ψ₉  = x2
+    ψ₁₀ = 3*(y2 - x2*logx)
+    ψ₁₁ = 3*(x4 - 4*x2*y2)
+    ψ₁₂ = 5*(-9*x4 + 8*y4 + 12*(x4 - 4*x2*y2)*logx)
 
     ψ_polys = @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
 
     return ψ_polys
 end
 
-@fastmath function _solovev_polynomials_Dyy(x, y, ::Val{N} = Val(12)) where N
+@fastmath function _solovev_polynomials_Dyy(x, y, ::Val{N} = Val(12); logx=log(x)) where N
+
+    x2 = x^2
+    x3 = x^3
+    x4 = x2^2
+    x6 = x2^3
+    y2 = y^2
+    y3 = y^3
+    y4 = y2^2
+
     # Derivatives from Mathematica
     ψ₁  = zero(y)
     ψ₂  = zero(y)
     ψ₃  = 2*one(y)
-    ψ₄  = -8*x^2
-    ψ₅  = -6*(3*x^2 - 4*y^2 + 4*x^2*log(x))
-    ψ₆  = -24*x^2*(x^2 - 4*y^2)
-    ψ₇  = 30*(5*x^4 - 56*x^2*y^2 + 8*y^4 + 12*(x^4 - 4*x^2*y^2)*log(x))
+    ψ₄  = -8*x2
+    ψ₅  = -6*(3*x2 - 4*y2 + 4*x2*logx)
+    ψ₆  = -24*x2*(x2 - 4*y2)
+    ψ₇  = 30*(5*x4 - 56*x2*y2 + 8*y4 + 12*(x4 - 4*x2*y2)*logx)
+
     N == 7 && return @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇]
 
     ψ₈  = zero(y)
     ψ₉  = zero(y)
     ψ₁₀ = 6*y
-    ψ₁₁ = -24*x^2*y
-    ψ₁₂ = 160*y*(y^2 - 3*x^2*log(x))
+    ψ₁₁ = -24*x2*y
+    ψ₁₂ = 160*y*(y2 - 3*x2*logx)
 
     ψ_polys = @SVector [ψ₁, ψ₂, ψ₃, ψ₄, ψ₅, ψ₆, ψ₇, ψ₈, ψ₉, ψ₁₀, ψ₁₁, ψ₁₂]
 
     return ψ_polys
 end
 
-@fastmath function _solovev_psi_p(x,y,A)
-    return x^4/8 + A*(x^2*log(x)/2 - x^4/8)
+@fastmath function _solovev_psi_p(x,y,A; logx=log(x))
+    # Derivatives from Mathematica
+    x2 = x^2
+    x4 = x2*x2
+    return x4/8 + A*(x2*logx/2 - x4/8)
 end
 
-@fastmath function _solovev_psi_p_Dx(x,y,A)
+@fastmath function _solovev_psi_p_Dx(x,y,A; logx=log(x))
     # Derivatives from Mathematica
-    return (x*(A + x^2 - A*x^2 + 2*A*log(x)))/2
+    x2 = x^2
+    return (x*(A + x2 - A*x2 + 2*A*logx))/2
 end
 
-@fastmath function _solovev_psi_p_Dxx(x,y,A)
+@fastmath function _solovev_psi_p_Dxx(x,y,A; logx=log(x))
     # Derivatives from Mathematica
-    return (3*(A + x^2 - A*x^2))/2 + A*log(x)
+    x2 = x^2
+    return (3*(A + x2 - A*x2))/2 + A*logx
 end
 
 function _solovev_psi_p_Dy(x,y,A)
-    # Derivatives from Mathematica
     return zero(y)
 end
 
 function _solovev_psi_p_Dyy(x,y,A)
-    # Derivatives from Mathematica
     return zero(y)
 end
 
-function _solovev_psi(x,y,A,coeffs::SVector{N}) where N
+function _solovev_psi(x,y,A,coeffs::SVector{N};logx=log(x)) where N
 
-    ψ_p = _solovev_psi_p(x,y,A)
-    ψ_polys = _solovev_polynomials(x,y,Val(N))
-
-    ψ_h = zero(x)
-    @inbounds for i=1:N
-        ψ_h += coeffs[i]*ψ_polys[i]
-    end
-
-    return ψ_p + ψ_h
-end
-
-function _solovev_psi_Dx(x,y,A,coeffs::SVector{N}) where N
-
-    ψ_p = _solovev_psi_p_Dx(x,y,A)
-    ψ_polys = _solovev_polynomials_Dx(x,y,Val(N))
+    ψ_p = _solovev_psi_p(x,y,A; logx=logx)
+    ψ_polys = _solovev_polynomials(x,y,Val(N),logx=logx)
 
     ψ_h = zero(x)
     @inbounds for i=1:N
@@ -163,10 +209,10 @@ function _solovev_psi_Dx(x,y,A,coeffs::SVector{N}) where N
     return ψ_p + ψ_h
 end
 
-function _solovev_psi_Dxx(x,y,A,coeffs::SVector{N}) where N
+function _solovev_psi_Dx(x,y,A,coeffs::SVector{N};logx=log(x)) where N
 
-    ψ_p = _solovev_psi_p_Dxx(x,y,A)
-    ψ_polys = _solovev_polynomials_Dxx(x,y,Val(N))
+    ψ_p = _solovev_psi_p_Dx(x,y,A,logx=logx)
+    ψ_polys = _solovev_polynomials_Dx(x,y,Val(N),logx=logx)
 
     ψ_h = zero(x)
     @inbounds for i=1:N
@@ -176,10 +222,23 @@ function _solovev_psi_Dxx(x,y,A,coeffs::SVector{N}) where N
     return ψ_p + ψ_h
 end
 
-function _solovev_psi_Dy(x,y,A,coeffs::SVector{N}) where N
+function _solovev_psi_Dxx(x,y,A,coeffs::SVector{N};logx=log(x)) where N
+
+    ψ_p = _solovev_psi_p_Dxx(x,y,A,logx=logx)
+    ψ_polys = _solovev_polynomials_Dxx(x,y,Val(N),logx=logx)
+
+    ψ_h = zero(x)
+    @inbounds for i=1:N
+        ψ_h += coeffs[i]*ψ_polys[i]
+    end
+
+    return ψ_p + ψ_h
+end
+
+function _solovev_psi_Dy(x,y,A,coeffs::SVector{N};logx=log(x)) where N
 
     ψ_p = _solovev_psi_p_Dy(x,y,A)
-    ψ_polys = _solovev_polynomials_Dy(x,y,Val(N))
+    ψ_polys = _solovev_polynomials_Dy(x,y,Val(N),logx=logx)
 
     ψ_h = zero(y)
     @inbounds for i=1:N
@@ -189,10 +248,10 @@ function _solovev_psi_Dy(x,y,A,coeffs::SVector{N}) where N
     return ψ_p + ψ_h
 end
 
-function _solovev_psi_Dyy(x,y,A,coeffs::SVector{N}) where N
+function _solovev_psi_Dyy(x,y,A,coeffs::SVector{N};logx=log(x)) where N
 
     ψ_p = _solovev_psi_p_Dyy(x,y,A)
-    ψ_polys = _solovev_polynomials_Dyy(x,y,Val(N))
+    ψ_polys = _solovev_polynomials_Dyy(x,y,Val(N),logx=logx)
 
     ψ_h = zero(x)
     @inbounds for i=1:N
@@ -438,7 +497,8 @@ end
 function (S::SolovevEquilibrium)(r,z)
     x = r/S.R0
     y = z/S.R0
-    return S.psi0*_solovev_psi(x,y,S.alpha,S.c)
+    logx = log(x)
+    return S.psi0*_solovev_psi(x,y,S.alpha,S.c,logx=logx)
 end
 
 function Base.show(io::IO, S::SolovevEquilibrium)
@@ -487,7 +547,8 @@ end
 
 function psi_gradient(S::SolovevEquilibrium,r,z)
     x, y = r/S.R0, z/S.R0
-    return (S.psi0/S.R0)*SVector{2}(_solovev_psi_Dx(x,y,S.alpha,S.c), _solovev_psi_Dy(x,y,S.alpha,S.c))
+    logx=log(x)
+    return (S.psi0/S.R0)*SVector{2}(_solovev_psi_Dx(x,y,S.alpha,S.c; logx=logx), _solovev_psi_Dy(x,y,S.alpha,S.c;logx=logx))
 end
 
 _solovev_magnetic_axis = Dict{SolovevEquilibrium,NTuple{2}}()

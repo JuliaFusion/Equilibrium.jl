@@ -44,14 +44,6 @@ end
 
 Base.broadcastable(CC::COCOS) = (CC,)
 
-function _cylindrical_cocos(::Val{1}, r, phi, z)
-    return (r, phi, z)
-end
-
-function _cylindrical_cocos(::Val{-1}, r, phi, z)
-    return (r, z, phi)
-end
-
 """
     cylindrical_cocos(c::COCOS, r, phi, z) -> NTuple{3}
 
@@ -62,15 +54,11 @@ Returns the right-handed cylindrical coordinate according to the provided COCOS.
 
 """
 function cylindrical_cocos(c::COCOS, r, phi, z)
-    return _cylindrical_cocos(Val(c.sigma_RpZ), r, phi, z)
-end
-
-function _cylindrical_cocos_indices(::Val{1})
-    return (1,2,3)
-end
-
-function _cylindrical_cocos_indices(::Val{-1})
-    return (1,3,2)
+    if c.sigma_RpZ == 1
+        return (r, phi, z)
+    else
+        return (r, z, phi)
+    end
 end
 
 """
@@ -83,15 +71,11 @@ Returns the indices of the r, phi, and z coordinates, respectively, relative to 
 
 """
 function cylindrical_cocos_indices(c::COCOS)
-    return _cylindrical_cocos_indices(Val(c.sigma_RpZ))
-end
-
-function _poloidal_cocos(::Val{1}, rho, theta, phi)
-    return (rho, theta, phi)
-end
-
-function _poloidal_cocos(::Val{-1}, rho, theta, phi)
-    return (rho, phi, theta)
+    if c.sigma_RpZ == 1
+        return (1,2,3)
+    else
+        return (1,3,2)
+    end
 end
 
 """
@@ -103,15 +87,12 @@ cocos.sigma_rhotp = +1 -> (rho, theta, phi)\\
 cocos.sigma_rhotp = -1 -> (rho, phi, theta)
 """
 function poloidal_cocos(c::COCOS, rho, theta, phi)
+    if c.sigma_rhotp == 1
+        return (rho, theta, phi)
+    else
+        return (rho, phi, theta)
+    end
     return _poloidal_cocos(Val(c.sigma_rhotp), rho, theta, phi)
-end
-
-function _poloidal_cocos_indices(::Val{1})
-    return (1,2,3)
-end
-
-function _poloidal_cocos_indices(::Val{-1})
-    return (1, 3, 2)
 end
 
 """
@@ -123,7 +104,11 @@ cocos.sigma_rhotp = +1 -> (1,2,3)\\
 cocos.sigma_rhotp = -1 -> (1,3,2)
 """
 function poloidal_cocos_indices(c::COCOS, rho, theta, phi)
-    return _poloidal_cocos_indices(Val(c.sigma_rhotp), rho, theta, phi)
+    if c.sigma_rhotp == 1
+        return (1,2,3)
+    else
+        return (1,3,2)
+    end
 end
 
 """
