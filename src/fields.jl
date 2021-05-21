@@ -205,9 +205,15 @@ end
 
 function curlB(M::AbstractEquilibrium, r, z)
     cc = cocos(M)
-    J = ForwardDiff.jacobian(x->Bfield(M,x[1],x[3]),SVector{3}(r,0.0,z))
     B = Bfield(M,r,z)
-    return cc.sigma_RpZ*SVector{3}(cylindrical_cocos(cc, J[3,2]/r - J[2,3], J[1,3] - J[3,1], (B[2]/r + J[2,1]) - J[1,2]/r))
+
+    # Complete version
+    #J = ForwardDiff.jacobian(x->Bfield(M,x[1],x[3]),SVector{3}(r,zero(r),z))
+    #return cc.sigma_RpZ*SVector{3}(cylindrical_cocos(cc, J[3,2]/r - J[2,3], J[1,3] - J[3,1], (B[2]/r + J[2,1]) - J[1,2]/r))
+
+    # Exploit axisymmetry to simplify
+    J = ForwardDiff.jacobian(x->Bfield(M,x[1],x[2]),SVector{2}(r,z))
+    return cc.sigma_RpZ*SVector{3}(cylindrical_cocos(cc, -J[2,2], J[1,2] - J[3,1], (B[2]/r + J[2,1])))
 end
 
 function curlB(M::AbstractEquilibrium, x, y, z)
