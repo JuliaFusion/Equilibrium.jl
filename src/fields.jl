@@ -120,7 +120,7 @@ function Efield(M::T, r, z) where T<:AbstractEquilibrium
     Ez = Er*grad_psi[2] # Er*dpsi/dz = (-dphi/dpsi)*(dpsi/dz)
     Et = zero(Ez)
 
-    return SVector{3}(cylindrical_cocos(cc, ER, Et, Ez))
+    return SVector{3}(cylindrical_cocos(cocos(M), ER, Et, Ez))
 end
 
 function Efield(M::T, x, y, z) where T<:AbstractEquilibrium
