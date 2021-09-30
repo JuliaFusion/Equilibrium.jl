@@ -1,5 +1,7 @@
-using Equilibrium
 using Test
+
+using ForwardDiff
+using Equilibrium
 using EFIT
 
 mu0 = 4pi*10^-7

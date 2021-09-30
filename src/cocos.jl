@@ -245,13 +245,13 @@ function transform_cocos(cc_in::COCOS, cc_out::COCOS;
 
     sigma_RpZ_eff = cc_in.sigma_RpZ * cc_out.sigma_RpZ
 
-    if sigma_Ip == nothing
+    if sigma_Ip === nothing
         sigma_Ip_eff = cc_in.sigma_RpZ * cc_out.sigma_RpZ
     else
         sigma_Ip_eff = sigma_Ip[1]*sigma_Ip[2]
     end
 
-    if sigma_B0 == nothing
+    if sigma_B0 === nothing
         sigma_B0_eff = cc_in.sigma_RpZ * cc_out.sigma_RpZ
     else
         sigma_B0_eff = sigma_B0[1]*sigma_B0[2]
@@ -301,7 +301,7 @@ Arguments:\\
 function identify_cocos(sigma_B0, sigma_Ip, sigma_q, sigma_dpsi,
                         clockwise_phi::Union{Bool,Nothing} = nothing)
 
-    if clockwise_phi == nothing
+    if clockwise_phi === nothing
         sigma_rpz = clockwise_phi
     elseif clockwise_phi
         sigma_rpz = -1
@@ -310,7 +310,7 @@ function identify_cocos(sigma_B0, sigma_Ip, sigma_q, sigma_dpsi,
     end
 
     # return both even and odd COCOS if clockwise_phi is not provided
-    if sigma_rpz == nothing
+    if sigma_rpz === nothing
         tmp  = identify_cocos(sigma_B0, sigma_Ip, sigma_q, sigma_dpsi, true)
         tmp2  = identify_cocos(sigma_B0, sigma_Ip, sigma_q, sigma_dpsi, false)
         return (tmp..., tmp2...)
@@ -357,7 +357,7 @@ function identify_cocos(B0, Ip, q::AbstractVector, psi::AbstractVector,
     ccs = identify_cocos(sigma_B0, sigma_Ip, sigma_q, sigma_dpsi, clockwise_phi)
 
     # identify 2*pi term in psi definition based on q estimate
-    if a != nothing
+    if a !== nothing
         index = argmin(abs.(q))
         if index == 1
             index += 1

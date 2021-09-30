@@ -328,13 +328,13 @@ function solovev(B0, R0, ϵ, δ, κ, α, qstar;
                  B0_dir = 1, Ip_dir = 1,
                  diverted::Bool = false,
                  xpoint::Union{NTuple{2},Nothing} = (diverted ? (R0*(1-1.1*δ*ϵ),-R0*1.1*κ*ϵ) : nothing),
-                 symmetric::Bool = (xpoint == nothing))
+                 symmetric::Bool = (xpoint === nothing))
 
     if δ > sin(1)
         @warn "Equilibrium is not convex. δ > sin(1)"
     end
 
-    diverted = xpoint != nothing
+    diverted = xpoint !== nothing
 
     #Eq. 11
     δ₀ = asin(δ)
@@ -342,11 +342,11 @@ function solovev(B0, R0, ϵ, δ, κ, α, qstar;
     N₂ =  (1 - δ₀)^2/(ϵ*κ^2) # [d²x/dy²]_(τ=pi)
     N₃ = -κ/(ϵ*cos(δ₀)^2)    # [d²y/dx²]_(τ=pi/2)
 
-    Ψ_h = zeros(12,12)
-    Ψ_p = zeros(12)
+    Ψ_h = zeros(typeof(α),12,12)
+    Ψ_p = zeros(typeof(α),12)
     # Boundary Conditions: (ψ_p - bc) + ψ_h'*c = 0
     if symmetric
-        if xpoint == nothing
+        if xpoint === nothing
             # Eq. 10
             # Outer equatorial point
             x, y = 1 + ϵ, 0
@@ -574,9 +574,13 @@ function psi_limits(S::SolovevEquilibrium)
     return (psimag, psibry)
 end
 
-function pressure_gradient(S::SolovevEquilibrium,psi)
+function pressure_gradient(S::SolovevEquilibrium)
     C = S.psi0*(1-S.alpha)/(S.R0^4)
     return -C/mu0
+end
+
+function pressure_gradient(S::SolovevEquilibrium, psi)
+    return pressure_gradient(S) + psi*0
 end
 
 function pressure(S::SolovevEquilibrium, psi; p0=zero(psi))
@@ -589,7 +593,7 @@ end
 function poloidal_current(S::SolovevEquilibrium,psi)
     A = S.psi0*S.alpha/(S.R0^2)
     dF2dpsi = -2*A
-    F2 = dF2dpsi*psi + S.R0^2*S.B0^2
+    F2 = abs(dF2dpsi*psi + S.R0^2*S.B0^2)
     return S.sigma_B0*sqrt(F2)
 end
 
@@ -610,7 +614,7 @@ function curlB(S::SolovevEquilibrium, r, z)
     grad_psi = psi_gradient(S,r,z)
 
     gp = poloidal_current_gradient(S,psi)
-    pp = pressure_gradient(S,psi)
+    pp = pressure_gradient(S)
 
     cc = cocos(S)
 

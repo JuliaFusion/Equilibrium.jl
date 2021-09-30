@@ -191,6 +191,31 @@ function safety_factor(M::AbstractEquilibrium, psi)
     return q
 end
 
+function plasma_current(M::AbstractEquilibrium)
+    cc = cocos(M)
+
+    bdry = boundary(M)
+    dr = diff(bdry.r)
+    dz = diff(bdry.z)
+
+    ll = vcat(0,cumsum(hypot.(dr, dz)))
+
+    Bp = poloidal_Bfield.(M, bdry.r, bdry.z)
+
+    Ip = cc.sigma_rhotp * trapz(ll, Bp) / mu0
+
+    return Ip
+end
+
+function beta_n(M::AbstractEquilibrium)
+    Ip = plasma_current(M)*1e-6
+    bdry = boundary(M)
+    rmin, rmax = extrema(bdry.r)
+    a = (rmax - rmin)/2
+    beta_n = M.beta_t / abs(Ip/a/M.B0) * 100
+    return beta_n
+end
+
 function gradB_autodiff(M::AbstractEquilibrium, r, z)
     gB_rz = ForwardDiff.gradient(x->norm(Bfield(M,x[1],x[2])), SVector{2}(r,z))
     return SVector{3}(cylindrical_cocos(cocos(M), gB_rz[1], 0.0, gB_rz[2]))

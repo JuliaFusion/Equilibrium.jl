@@ -69,4 +69,13 @@ test_data = ((cc1,S1,r1,btip1), (cc2,S2,r2,btip2), (cc3,S3,r3,btip3), (cc4,S4,r4
         end
     end
 
+    @testset "ForwardDiff" begin
+        function opti(alpha)
+            S = solovev(B0, R0, ϵ, δ, κ, alpha, qstar, B0_dir=1, Ip_dir=1)
+            return (S.beta_p - 2)^2
+        end
+
+        @test (ForwardDiff.derivative(opti, alpha) !== nothing)
+    end
+
 end

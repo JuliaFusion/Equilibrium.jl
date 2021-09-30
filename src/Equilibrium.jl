@@ -7,6 +7,7 @@ using LinearAlgebra
 using Interpolations
 using ForwardDiff
 using StaticArrays
+using Trapz
 
 import PolygonOps
 import Contour
@@ -36,6 +37,7 @@ B0Ip_sign(M::AbstractEquilibrium) = _not_implemented(M)
 # Equilibrium API
 export magnetic_axis, limits, psi_limits, psi_gradient, electric_potential, electric_potential_gradient
 export pressure, poloidal_current, pressure_gradient, poloidal_current_gradient, safety_factor, cocos, B0Ip_sign
+export plasma_current, beta_n
 
 include("cocos.jl")
 export COCOS, cocos, check_cocos, identify_cocos, transform_cocos
