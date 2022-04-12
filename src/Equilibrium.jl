@@ -47,6 +47,11 @@ include("boundary.jl")
 export Boundary, PlasmaBoundary, FluxSurface, Wall, in_boundary, in_plasma, in_vessel
 export boundary, flux_surface, circumference, average, area, area_average, volume, volume_average
 
+include("shape.jl")
+export PlasmaShape, MillerShape, MillerExtendedHarmonicShape, shape
+export curvature, triangularity, squareness, tilt, elevation, ovality
+export elongation, aspect_ratio, major_radius, minor_radius
+
 include("solovev.jl")
 export SolovevEquilibrium, solovev, clear_cache
 

@@ -58,14 +58,12 @@ R0 = 6.2        # Major Radius [m]
 qstar = 1.57    # Kink safety factor
 alpha = -0.155  # constant
 
-S = solovev(B0, R0, ϵ, δ, κ, alpha, qstar,B0_dir=1,Ip_dir=1)
+S = solovev(B0, MillerShape(R0, ϵ, κ, δ), alpha, qstar, B0_dir=1, Ip_dir=1)
+
 
 SolovevEquilibrium
   B0 = 2.0 [T]
-  R0 = 6.2 [m]
-  ϵ  = 0.32
-  δ  = 0.33
-  κ  = 1.7
+  S  = MillerShape{Float64}(6.2, 0.32, 1.7, 0.33)
   α  = -0.155
   q⋆ = 1.57
   βp = 1.1837605469381924
