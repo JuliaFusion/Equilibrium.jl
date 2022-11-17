@@ -17,17 +17,17 @@ end
 function efit(cc::COCOS, r::S, z::S, psi::S, psi_rz, g, p,
               q, phi, axis::NTuple{2,T}, sigma::Int) where {T,S<:AbstractRange}
 
-    psi_rz_itp = CubicSplineInterpolation((r,z), psi_rz, extrapolation_bc=Flat())
+    psi_rz_itp = cubic_spline_interpolation((r,z), psi_rz, extrapolation_bc=Flat())
     if step(psi) > 0
-        g_itp = CubicSplineInterpolation(psi, g, extrapolation_bc=Flat())
-        p_itp = CubicSplineInterpolation(psi, p, extrapolation_bc=Flat())
-        q_itp = CubicSplineInterpolation(psi, q, extrapolation_bc=Flat())
-        phi_itp = CubicSplineInterpolation(psi, phi, extrapolation_bc=Flat())
-    else # CubicSplineInterpolation doesn't like decreasing psi so reverse them
-        g_itp = CubicSplineInterpolation(reverse(psi), reverse(g), extrapolation_bc=Flat())
-        p_itp = CubicSplineInterpolation(reverse(psi), reverse(p), extrapolation_bc=Flat())
-        q_itp = CubicSplineInterpolation(reverse(psi), reverse(q), extrapolation_bc=Flat())
-        phi_itp = CubicSplineInterpolation(reverse(psi), reverse(phi), extrapolation_bc=Flat())
+        g_itp = cubic_spline_interpolation(psi, g, extrapolation_bc=Flat())
+        p_itp = cubic_spline_interpolation(psi, p, extrapolation_bc=Flat())
+        q_itp = cubic_spline_interpolation(psi, q, extrapolation_bc=Flat())
+        phi_itp = cubic_spline_interpolation(psi, phi, extrapolation_bc=Flat())
+    else # cubic_spline_interpolation doesn't like decreasing psi so reverse them
+        g_itp = cubic_spline_interpolation(reverse(psi), reverse(g), extrapolation_bc=Flat())
+        p_itp = cubic_spline_interpolation(reverse(psi), reverse(p), extrapolation_bc=Flat())
+        q_itp = cubic_spline_interpolation(reverse(psi), reverse(q), extrapolation_bc=Flat())
+        phi_itp = cubic_spline_interpolation(reverse(psi), reverse(phi), extrapolation_bc=Flat())
     end
     EFITEquilibrium(cc, r, z, psi, psi_rz_itp, g_itp, p_itp, q_itp, phi_itp, axis, Int(sigma))
 end

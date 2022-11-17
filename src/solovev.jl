@@ -298,7 +298,7 @@ struct SolovevEquilibrium{T,N} <: AbstractEquilibrium
 end
 
 """
-    solovev(B0, R0, ϵ, δ, κ, q⋆, α; B0_dir=1, Ip_dir=1, diverted=false, xpoint=nothing, symmetric = true)
+    solovev(B0, R0, ϵ, δ, κ, q⋆, α; B0_dir=1, Ip_dir=1, diverted=false, x_point=nothing, symmetric = true)
 
 Creates a SolovevEquilibrium Structure
 
@@ -315,7 +315,7 @@ Keyword Arguments:\\
 `B0_dir` - Direction of the toroidal field (+1 = CCW, -1 = CW)\\
 `Ip_dir` - Direction of the plasma current (+1 = CCW, -1 = CW)\\
 `diverted` - If true then equilibrium has one or more x-points\\
-`xpoint` - If diverted = true, then xpoint is set to (R0*(1-1.1*δ*ϵ), -R0*1.1*κ*ϵ) else nothing\\
+`x_point` - If diverted = true, then x_point is set to (R0*(1-1.1*δ*ϵ), -R0*1.1*κ*ϵ) else nothing\\
 `symmetric` - Is equilibrium up-down symmetric\\
 """
 function solovev(B0, R0, ϵ, δ, κ, α, qstar; kwargs...)
@@ -323,7 +323,7 @@ function solovev(B0, R0, ϵ, δ, κ, α, qstar; kwargs...)
 end
 
 """
-    solovev(B0, S, q⋆, α; B0_dir=1, Ip_dir=1, diverted=false, xpoint=nothing, symmetric = true)
+    solovev(B0, S, q⋆, α; B0_dir=1, Ip_dir=1, diverted=false, x_point=nothing, symmetric = true)
 
 Creates a SolovevEquilibrium Structure
 
@@ -337,14 +337,14 @@ Keyword Arguments:\\
 `B0_dir` - Direction of the toroidal field (+1 = CCW, -1 = CW)\\
 `Ip_dir` - Direction of the plasma current (+1 = CCW, -1 = CW)\\
 `diverted` - If true then equilibrium has one or more x-points\\
-`xpoint` - If diverted = true, then xpoint is set to (R0*(1-1.1*δ*ϵ), -R0*1.1*κ*ϵ) else nothing\\
+`x_point` - If diverted = true, then x_point is set to (R0*(1-1.1*δ*ϵ), -R0*1.1*κ*ϵ) else nothing\\
 `symmetric` - Is equilibrium up-down symmetric\\
 """
-function solovev(B0, S, α, qstar;
+function solovev(B0, S::MillerShape, α, qstar;
                  B0_dir = 1, Ip_dir = 1,
                  diverted::Bool = false,
-                 xpoint::Union{NTuple{2},Nothing} = (diverted ? scale_aspect(S,1.1)(3pi/2) : nothing),
-                 symmetric::Bool = (xpoint === nothing))
+                 x_point::Union{NTuple{2},Nothing} = (diverted ? scale_aspect(S,1.1)(3pi/2) : nothing),
+                 symmetric::Bool = (x_point === nothing))
 
     R0 = major_radius(S)
     ϵ = inv(aspect_ratio(S))
@@ -354,18 +354,18 @@ function solovev(B0, S, α, qstar;
         @warn "Equilibrium is not convex. δ > sin(1)"
     end
 
-    diverted = xpoint !== nothing
+    diverted = x_point !== nothing
 
     #Eq. 11
-    N₁ = -curvature(S,0.0)     # [d²x/dy²]_(τ=0)
-    N₂ =  curvature(S,pi)      # [d²x/dy²]_(τ=pi)
-    N₃ = -curvature(S,pi/2)    # [d²y/dx²]_(τ=pi/2)
+    N₁ = -R0*curvature(S,0.0)     # [d²x/dy²]_(τ=0)
+    N₂ =  R0*curvature(S,pi)      # [d²x/dy²]_(τ=pi)
+    N₃ = -R0*curvature(S,pi/2)    # [d²y/dx²]_(τ=pi/2)
 
     Ψ_h = zeros(typeof(α),12,12)
     Ψ_p = zeros(typeof(α),12)
     # Boundary Conditions: (ψ_p - bc) + ψ_h'*c = 0
     if symmetric
-        if xpoint === nothing
+        if x_point === nothing
             # Eq. 10
             # Outer equatorial point
             x, y = S(0.0)./R0
@@ -398,7 +398,7 @@ function solovev(B0, S, α, qstar;
 
             c = SVector{7}(Ψ_h[1:7,1:7]'\(-Ψ_p[1:7]))
         else
-            xsep, ysep = xpoint[1]/R0, xpoint[2]/R0 # normalize xpoint
+            xsep, ysep = x_point[1]/R0, x_point[2]/R0 # normalize x_point
 
             # Eq. 12
             # Outer equatorial point
@@ -433,7 +433,7 @@ function solovev(B0, S, α, qstar;
             c = SVector{7}(Ψ_h[1:7,1:7]'\(-Ψ_p[1:7]))
         end
     else
-        xsep, ysep = xpoint[1]/R0, xpoint[2]/R0 # normalize xpoint
+        xsep, ysep = x_point[1]/R0, x_point[2]/R0 # normalize x_point
         if ysep > 0
             throw(ArgumentError("X-point should be below the midplane"))
         end
@@ -492,7 +492,7 @@ function solovev(B0, S, α, qstar;
     end
 
     x,y = shape(S,N=100)
-    bdry = PlasmaBoundary(collect(zip(x,y)))
+    bdry = PlasmaBoundary(collect(zip(x./R0,y./R0)))
 
     #Eq. 6.158 in Ideal MHD
     V = volume(bdry,dx=0.005,dy=0.005)

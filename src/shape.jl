@@ -74,35 +74,30 @@ mutable struct MillerExtendedHarmonicShape{T<:Number} <: PlasmaShape
     ϵ::T         # inverse aspect ratio a/R0
     κ::T         # Elongation
     c0::T        # Tilt
-    c::Vector{T} # Cosine coefficients acos.([ovality,...])
-    s::Vector{T} # Sine coefficients asin.([triangularity,-squareness,...]
+    c::Vector{T} # Cosine coefficients ([ovality,...])
+    s::Vector{T} # Sine coefficients [asin.(triangularity),squareness,...]
 end
 
-function MillerExtendedHarmonicShape(R0,ϵ,κ,c::Vector,s::Vector; Z0=zero(R0),c0=zero(R0))
-    any(-1.0 .<= s .<= 1.0) && error("Sine coefficients out of range [-1, 1]")
-    any(-1.0 .<= c .<= 1.0) && error("Cosine coefficients out of range [-1, 1]")
+function MillerExtendedHarmonicShape(R0,Z0,ϵ,κ,c0, c::Vector, s::Vector)
+    @assert length(c) == length(s)
 
-    MillerExtendedHarmonicShape(promote(R0,Z0,ϵ,κ,c0)...,acos.(c), asin.(s))
+    MillerExtendedHarmonicShape(promote(R0,Z0,ϵ,κ,c0)...,c, s)
 end
 
 function MillerExtendedHarmonicShape(R0, ϵ, κ, δ; Z0=zero(R0),tilt=zero(R0), ovality=one(R0), squareness=zero(R0))
-    abs(δ) > 1 && error("Triangularity out of range [-1,1]")
-    abs(squareness) > 1 && error("Squareness out of range [-1,1]")
-    abs(ovality) > 1 && error("Ovality out of range [-1,1]")
-
-    MillerExtendedHarmonicShape(promote(R0,Z0,ϵ,κ,c0)...,acos.([ovality]), asin.([δ,-squareness]))
+    MillerExtendedHarmonicShape(promote(R0,Z0,ϵ,κ,c0)...,[ovality], [δ,-squareness])
 end
 
 function MillerExtendedHarmonicShape(S::MillerShape)
     s = [S.δ]
-    MillerExtendedHarmonicShape(S.R0,zero(S.R0),S.ϵ,S.κ,zero(S.κ),zero(s), asin.(s))
+    MillerExtendedHarmonicShape(S.R0,zero(S.R0),S.ϵ,S.κ,zero(S.κ), zero(s), asin.(s))
 end
 
 elevation(S::MillerExtendedHarmonicShape) = S.Z0
 tilt(S::MillerExtendedHarmonicShape) = S.c0
 ovality(S::MillerExtendedHarmonicShape) = S.c[1]
 triangularity(S::MillerExtendedHarmonicShape) = sin(S.s[1])
-squareness(S::MillerExtendedHarmonicShape) = sin(-S.s[2])
+squareness(S::MillerExtendedHarmonicShape) = S.s[2]
 
 function shape(S::MillerExtendedHarmonicShape; N=100)
     x = zeros(N)
@@ -125,7 +120,7 @@ function (S::MillerExtendedHarmonicShape)(θ)
     r = S.ϵ*S.R0
     c_sum = sum(S.c[n]*cos(n*θ) for n=1:length(S.c))
     s_sum = sum(S.s[n]*sin(n*θ) for n=1:length(S.s))
-    θ_R = θ[i] + S.c0 + c_sum + s_sum
+    θ_R = θ + S.c0 + c_sum + s_sum
     x = S.R0 + r*cos(θ_R)
     y = S.Z0 + S.κ*r*sin(θ)
 
