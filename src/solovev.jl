@@ -570,7 +570,7 @@ function psi_gradient(S::SolovevEquilibrium,r,z)
     return (S.psi0/R0)*SVector{2}(_solovev_psi_Dx(x,y,S.alpha,S.c; logx=logx), _solovev_psi_Dy(x,y,S.alpha,S.c;logx=logx))
 end
 
-_solovev_magnetic_axis = Dict{SolovevEquilibrium,NTuple{2}}()
+const _solovev_magnetic_axis = ConcurrentDict{SolovevEquilibrium,NTuple{2}}()
 function clear_cache(S)
     delete!(_solovev_magnetic_axis,S)
 end

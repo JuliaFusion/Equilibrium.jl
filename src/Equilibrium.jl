@@ -2,6 +2,7 @@ __precompile__()
 
 module Equilibrium
 
+using ConcurrentCollections
 using EFIT
 using LinearAlgebra
 using Interpolations
