@@ -6,8 +6,9 @@ major_radius(S::PlasmaShape) = S.R0
 minor_radius(S::PlasmaShape) = S.R0*S.ϵ
 
 function scale_aspect(S::PlasmaShape,s)
-    SS = copy(S)
+    SS = deepcopy(S)
     SS.ϵ = s*S.ϵ
+    return SS
 end
 
 """
